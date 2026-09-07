@@ -714,6 +714,22 @@ test("the per-block chrome that was deleted leaves no orphan rules behind", () =
 	}
 });
 
+test("FlowDiagram canvas sizing does not reach the toolbar SVG icons", () => {
+	// The host renders toolbar icons as SVG too. Keep the minimum canvas width
+	// inside the scroll container; actual clipping is checked in Obsidian.
+	const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+	const canvasRule = /^\.mosaic-flow-scroll\s*>\s*svg\s*\{([^}]*)\}/m.exec(css);
+	assert.notEqual(canvasRule, null, "canvas sizing must target the scroll container's SVG");
+	assert.match(canvasRule[1], /min-width:\s*720px\s*;/);
+	assert.doesNotMatch(css, /^\.mosaic-flow-diagram\s+svg\s*\{/m);
+});
+
+test("card title sizing outranks the host Markdown heading rule", () => {
+	const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+	// A lone class loses to .markdown-rendered h3, even when loaded later.
+	assert.equal(fontSizeIn(css, ".mosaic-block .mosaic-block-title"), "15px");
+});
+
 // --- 复制 ---
 
 test("the copy button puts the whole locating context on the clipboard", async () => {

@@ -24,8 +24,9 @@ Mosaic 是 Obsidian 社区插件（plugin id `mosaic`，GitHub `GilbertzzzZZ/obs
 
 - 改**渲染链路** → 先读下文「已固化的陷阱」。那四条是真机踩出来的，读源码推不出来。
 - 改**某个内容块的行为** → 读 `docs/design/<block>.md`（当初为什么这么定）与 `docs/guides/<block>.md`（现在对外承诺了什么）。
+- 跟随 **OpenGlance 的 Chart 与卡片显示能力** → 读 `docs/engineering/openglance-rendering-sync.md`，只同步该文档定义的渲染契约与视觉语义。
 - 改 **UI、设置页、manifest** → 先逐条对照 `docs/policies/` 四篇官方规范。
-- 走**发版流程** → [docs/guides/publishing-to-obsidian.md](docs/guides/publishing-to-obsidian.md)。
+- 走**发版流程** → [docs/engineering/publishing-to-obsidian.md](docs/engineering/publishing-to-obsidian.md)。
 
 ### 2. 动手时的硬约束
 
@@ -38,7 +39,7 @@ Mosaic 是 Obsidian 社区插件（plugin id `mosaic`，GitHub `GilbertzzzZZ/obs
 
 按顺序走，全过才算做完：
 
-1. `npm test`——326 条全绿，挂一条都不算完。
+1. `npm test`——340 条全绿，挂一条都不算完。
 2. `npm run build`——tsc typecheck 与 esbuild production 都要过。
 3. **行为变了就同步文档**：怎么用变了改 `docs/guides/`，为什么这么定变了改 `docs/design/`。两边都要看一眼，不要只改一边。
 4. 单元测试验不了的（画出来什么样、宿主行为、错误框出现在哪）才进测试 vault，纯函数能验的一律不放。
@@ -81,9 +82,11 @@ obsidian-mosaic/
 ├── docs/
 │   ├── _archive/         # 已完成 plan 的归档
 │   ├── _assets/          # 文档截图（模拟英文假数据，dark 主题实拍）
-│   ├── design/           # 每个区块的设计文档
-│   ├── guides/           # 各区块用法 / dataset 契约 / 发版步骤；八篇用户
-│   │                     # 指导双语成对（xxx.md 英文为准 + xxx-zh.md）
+│   ├── design/           # 面向开发者：架构与区块设计理由
+│   ├── engineering/      # 面向开发者与维护者：开发、验证、上游同步、发版
+│   │                     # 操作指南；仅英文，不创建中文镜像
+│   ├── guides/           # 面向插件使用者：区块用法 / dataset 契约 / 排错
+│   │                     # 指南；双语成对（xxx.md 英文为准 + xxx-zh.md）
 │   ├── plans/            # 正在执行的实施计划，做完移进 _archive/
 │   ├── policies/         # Obsidian 官方规范原文归档
 │   ├── research/         # 技术调研档案：候选方案的能力边界、许可证、
@@ -102,18 +105,25 @@ obsidian-mosaic/
 
 ## docs/ 的目录约束
 
-| 目录 | 放什么 | 不放什么 |
-| --- | --- | --- |
-| `guides/` | **how**：写法、属性表、payload 契约、报错清单、发版步骤 | 设计理由 |
-| `design/` | **why**：为什么这么设计，机制取舍与被否决的方案 | 属性明细、用法示例、代码 |
-| `policies/` | Obsidian 官方规范原文，带 source url 与抓取日期，文件名统一 `obsidian-` 前缀 | Mosaic 自己的规则（在本文） |
-| `research/` | 第三方技术调研，结论尚未落地 | 结论落地后的实施细节 |
-| `plans/` | 正在执行的实施计划 | 已经做完的（移进 `_archive/`） |
-| `_archive/` | 已完成 plan，状态块记录落点与**后来被推翻的项** | 写不出被推翻项的流水账——直接删，不必归档 |
+| 目录 | 读者 | 放什么 | 不放什么 |
+| --- | --- | --- | --- |
+| `guides/` | 插件使用者 | **how**：写法、属性表、payload 契约、报错清单 | 开发操作、上游同步、发版步骤、设计理由 |
+| `engineering/` | 开发者、维护者与执行任务的 agent | **how**：本地开发、验证、上游同步、发版操作指南 | 用户用法、完整设计理由、一次性任务计划 |
+| `design/` | 开发者 | **why**：为什么这么设计，机制取舍与被否决的方案 | 属性明细、用法示例、操作步骤、代码 |
+| `policies/` | 开发者与维护者 | Obsidian 官方规范原文，带 source url 与抓取日期，文件名统一 `obsidian-` 前缀 | Mosaic 自己的规则（在本文） |
+| `research/` | 技术调研与选型人员 | 第三方技术调研，结论尚未落地 | 结论落地后的实施细节 |
+| `plans/` | 任务执行者 | 正在执行的实施计划 | 已经做完的（移进 `_archive/`） |
+| `_archive/` | 维护者 | 已完成 plan，状态块记录落点与**后来被推翻的项** | 写不出被推翻项的流水账——直接删，不必归档 |
 
-**`guides/` 是双语的**：八篇面向使用者的指导每篇两份，`xxx.md` 是英文、`xxx-zh.md` 是中文，**英文为准**——先改英文再翻中文，两边都改，与根 README 同一套维护方式。两份顶部互相链接。代码示例逐字相同、不做本地化，示例数据一律用英文假数据。唯一的例外是 `publishing-to-obsidian.md`：它是发版操作步骤，读者只有作者和 agent，单份中文即可。
+**语言规则**
 
-新文档按「读者是谁」一步定位：使用者要照着做 → `guides/`；改代码的人需要知道当初为什么这么定 → `design/`；别人定的规矩我们只管遵守 → `policies/`；「该不该换、该选哪个」→ `research/`；这一轮的任务拆分 → `plans/`。都不是，多半不该进这个仓库。
+- `guides/` 只放面向用户的双语指南：`xxx.md` 为英文权威版本，`xxx-zh.md` 为中文镜像。
+- 用户指南先改英文，再同步中文，两份顶部互相链接。
+- 双语指南的代码示例逐字相同，不做本地化，示例数据一律用英文假数据。
+- `engineering/` 的工程操作指南只保留英文 `.md`，不创建 `-zh.md` 镜像或语言切换链接。
+- 上游同步指南与发版指南统一归入 `engineering/`。
+
+新文档先按读者与用途选择目录：用户学习插件用法放 `guides/`，开发与维护操作放 `engineering/`，设计理由放 `design/`，第三方规则放 `policies/`，未落地的技术调研放 `research/`，本轮实施任务放 `plans/`。
 
 同一件事在 `guides/` 与 `design/` 各有一份是常态——前者讲怎么写属性，后者讲这些属性为什么长这样。两边都写全，不要互相塞。
 
@@ -129,7 +139,7 @@ npm run install:vault  # build + 按 MOSAIC_PLUGIN_DIR 拷三件套到测试 vau
 
 - 测试 vault 是一个**独立的本地 git 仓库**，不是本仓库的子目录，也不被本仓库跟踪；`npm run install:vault` 按 `MOSAIC_PLUGIN_DIR` 环境变量部署三件套。不要用日常使用的 vault 做测试。
 - 改测试库前先 `git status` 看清工作区；写坏了 `git checkout` 就能回退，不需要手工备份。`.obsidian/` 不进 git（宿主状态，随每次部署和插件开关而变）。
-- **只放单元测试验不了的东西**。326 条单测已覆盖纯函数层（解析产物、配置对象、错误文案），这里验的是：画出来什么样、换写法结果一不一致、宿主行为、错误框出现在哪、给人看的效果。纯函数能验的一律不放——别名链就是反例，`tests/payload.test.mjs` 已有三条 `alias chain fallbacks`。
+- **只放单元测试验不了的东西**。340 条单测已覆盖纯函数层（解析产物、配置对象、错误文案），这里验的是：画出来什么样、换写法结果一不一致、宿主行为、错误框出现在哪、给人看的效果。纯函数能验的一律不放——别名链就是反例，`tests/payload.test.mjs` 已有三条 `alias chain fallbacks`。
 - **一份文件 = 一条可验证的断言，文件名说清验什么，不用编号**。六个类型目录下是能力名（`line.md` / `granularity.md` / `payload-forms.md` / `errors.md` …）。
 - **同一能力的所有写法放在同一份文件里**，小节标题固定 `## 代码块 · 内联` / `## 代码块 · 外部` / `## 标签 · 内联` / `## 标签 · 外部`，四段画同一张图——等价性验证是一屏之内的视觉对照，不是跨文件记忆对照。只有 Chart 与 DataTable 有四段，其余四类只有 `## 代码块` 与 `## 标签`（外部数据只这两类支持）。
 - `host-behavior/` 验宿主而非某个类型（主题切换、虚拟化与宽度、段落接管、插件启停）；`cases/` 是四篇模拟场景报告，效果呈现，写法刻意混杂且每篇留两处故意写错；`_assets/` 是数据文件；`_readme/` 是 README 截图专用页。
@@ -149,7 +159,7 @@ npm run install:vault  # build + 按 MOSAIC_PLUGIN_DIR 拷三件套到测试 vau
 ## 上架合规（marketplace）
 
 - 官方规范原文归档在 [docs/policies/](docs/policies/)，四篇均带 `obsidian-` 前缀：developer-policies、submission-requirements、plugin-guidelines、plugin-self-critique-checklist。改 UI/设置页/manifest 前先对照。
-- 发版操作步骤在 [docs/guides/publishing-to-obsidian.md](docs/guides/publishing-to-obsidian.md)。注意官方流程已改版：提交社区目录走 community.obsidian.md，**不再向 obsidian-releases 提 PR**。
+- 发版操作步骤在 [docs/engineering/publishing-to-obsidian.md](docs/engineering/publishing-to-obsidian.md)。注意官方流程已改版：提交社区目录走 community.obsidian.md，**不再向 obsidian-releases 提 PR**。
 - 已达成并必须保持：无 console 噪音、无 innerHTML、无网络请求、无遥测、bundle 里无 `eval` / `new Function`、UI 文案英文 sentence case、设置页无标题且走声明式 API（`getSettingDefinitions`，不留 `display()`）、build 必过 typecheck、`main.js` 不进 git。
 - 审核结果里的 **Source code** 一节，是目录方用它自己那套 typescript-eslint 跑出来的，不是本仓库的 lint。**不要为了复现它把 lint 工具链装进本仓库**：`typescript-eslint` 的 peer 是 `typescript >=4.8.4 <6.1.0`，而本仓库用 TS 7——装它就得降 TypeScript 主版本；`eslint-plugin-obsidianmd` 的 peer 还锁死 `obsidian: 1.8.7`。更不要把 lint 挂进 `build`：目录审核靠 `npm run build` 做 byte-for-byte 复现，lint 一红，整次扫描就没有结果。要核对就在仓库外建一次性环境，跑完即弃。
 

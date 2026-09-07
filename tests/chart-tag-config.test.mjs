@@ -44,6 +44,9 @@ const PLOTS = {
 const G2 = (path) =>
 	require(`@ant-design/plots/node_modules/@antv/g2/lib/${path}`);
 const { addGuideToScale } = G2("runtime/transform.js");
+const { inferScale } = G2("runtime/scale.js");
+const { StackY } = G2("transform/stackY.js");
+const { column } = G2("transform/utils/helper.js");
 
 function asEngineSees(built) {
 	const Plot = PLOTS[built.chartType];
@@ -1846,16 +1849,128 @@ test("every chart rounds its axis top onto a labelled tick", () => {
 	}
 });
 
-test("headroom plus unrounded ticks would leave a dual axis nearly bare", () => {
-	// this is why the dual axis rounds too. Its domain has no zero floor, so the 8%
-	// headroom lands the top on an unround number, the optimiser answers with a
-	// coarser step, and the two ticks that fall outside the domain get dropped.
-	const raw = [42000, 64500 * 1.08]; // the demo dataset's revenue axis
-	const bare = wilkinsonExtended(...raw, 5).filter((t) => t >= raw[0] && t <= raw[1]);
-	assert.equal(bare.length, 2, "the premise of this test no longer holds");
-	const rounded = new Linear({ domain: raw, tickCount: 5, nice: true, tickMethod: wilkinsonExtended });
-	const [lo, hi] = rounded.getOptions().domain;
-	assert.equal(wilkinsonExtended(lo, hi, 5).filter((t) => t >= lo && t <= hi).length, 4);
+// Exercise our scale options after the plots adaptor and stacking, including
+// G2's domain inference: raw values alone miss the extent of stacked bars.
+function chartYDomains(built) {
+	const spec = asEngineSees(built);
+	return marksOf(spec).filter((mark) => mark.scale?.y).map((mark) => {
+		const data = mark.data ?? spec.data;
+		let values = [data.map((row) => row[mark.encode.y])];
+		const stack = mark.transform?.find((t) => t.type === "stackY");
+		if (stack) {
+			const encode = Object.fromEntries(["x", "y", "color"].map((channel) => [
+				channel, column(data.map((row) => row[mark.encode[channel]])),
+			]));
+			const [, stacked] = StackY(stack)(data.map((_, i) => i), { ...mark, data, encode });
+			values = [stacked.encode.y.value, stacked.encode.y1.value];
+		}
+		const inferred = inferScale("y", values, {
+			type: "linear",
+			range: [1, 0],
+			...mark.scale.y,
+		}, [], {}, {});
+		return new Linear(inferred).getOptions().domain;
+	});
+}
+
+test("nonnegative chart axes start at zero for inline and dataset input", () => {
+	for (const [name, attrs] of CHART_SHAPES) {
+		const builds = [
+			buildChartFromInline({
+				attributes: { ...attrs, x: "period" },
+				csv: "period,Total,Split\nA,100,80\nB,110,90",
+			}),
+			buildChartFromTag({
+				manifest, rows,
+				attributes: { ...base, ...attrs, granularity: "month" },
+			}),
+		];
+		for (const built of builds) {
+			const domains = chartYDomains(built);
+			assert.ok(domains.length > 0, name);
+			for (const [min, max] of domains) {
+				assert.equal(min, 0, `${name}: truncated positive axis`);
+				assert.ok(max > 0, `${name}: empty positive range`);
+			}
+		}
+	}
+});
+
+test("negative-only chart axes retain zero at the top", () => {
+	for (const [name, attrs] of CHART_SHAPES) {
+		const built = buildChartFromInline({
+			attributes: { ...attrs, x: "period" },
+			csv: "period,Total,Split\nA,-100,-80\nB,-110,-90",
+		});
+		for (const [min, max] of chartYDomains(built)) {
+			assert.ok(min < 0, `${name}: negative values were clipped`);
+			assert.equal(max, 0, `${name}: zero baseline missing`);
+		}
+	}
+});
+
+test("single-axis combo shares a zero-inclusive range without clipping negatives", () => {
+	const built = buildChartFromInline({
+		attributes: { type: "combo", x: "period", bars: "a", lines: "b" },
+		csv: "period,a,b\nA,-80,100\nB,110,-200",
+	});
+	const domains = chartYDomains(built);
+	assert.ok(domains.length >= 2);
+	for (const domain of domains) {
+		assert.deepEqual(domain, domains[0]);
+		assert.ok(domain[0] <= -200);
+		assert.ok(domain[1] >= 110);
+	}
+});
+
+test("zero-only chart axes have a nonzero span starting at zero", () => {
+	for (const [name, attrs] of CHART_SHAPES) {
+		const built = buildChartFromInline({
+			attributes: { ...attrs, x: "period" },
+			csv: "period,Total,Split\nA,0,0\nB,0,0",
+		});
+		for (const domain of chartYDomains(built)) {
+			assert.deepEqual(domain, [0, 1], name);
+		}
+	}
+});
+
+for (const [name, csvRows, min, max] of [
+	["negative net totals", "2026-01-01,100,-200\n2026-02-01,80,-160", -200, 100],
+	["zero net totals", "2026-01-01,100,-100\n2026-02-01,80,-80", -100, 100],
+	["positive net totals", "2026-01-01,100,-80\n2026-02-01,120,-100", -100, 120],
+]) {
+	test(`mixed-sign stacked bars remain inside the axis with ${name}`, () => {
+		const csv = `AnchorDate,Total,Split\n${csvRows}`;
+		const builds = [
+			buildChartFromInline({
+				attributes: { type: "stacked-bar", x: "AnchorDate", series: "Total,Split" }, csv,
+			}),
+			buildChartFromTag({
+				manifest, rows: parseDatasetData(manifest, csv),
+				attributes: { type: "stacked-bar", series: "Total,Split", granularity: "month" },
+			}),
+		];
+		for (const built of builds) {
+			const domains = chartYDomains(built);
+			assert.ok(domains.length > 0);
+			for (const [lo, hi] of domains) {
+				assert.ok(lo <= min, `negative stack ${min} clipped by ${lo}`);
+				assert.ok(hi >= max * 1.08, `positive stack ${max} clipped or missing headroom at ${hi}`);
+			}
+		}
+	});
+}
+
+test("stacked axes contain cumulative endpoints on both sides of zero", () => {
+	const built = buildChartFromInline({
+		attributes: { type: "stacked-bar", x: "period", series: "a,b,c,d" },
+		csv: "period,a,b,c,d\nA,100,80,-300,-20\nB,80,60,-160,-40",
+	});
+	for (const [lo, hi] of chartYDomains(built)) {
+		assert.ok(lo <= -320, `negative stack clipped by ${lo}`);
+		assert.ok(hi >= 180 * 1.08, `positive stack clipped or missing headroom at ${hi}`);
+	}
 });
 
 test("every chart with bars carries a hover band shell the theme can paint", () => {

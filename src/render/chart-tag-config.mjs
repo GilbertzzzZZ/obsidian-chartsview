@@ -474,7 +474,8 @@ function headroomMax(values) {
 	const finite = values.filter((v) => Number.isFinite(v));
 	if (finite.length === 0) return undefined;
 	const max = Math.max(...finite);
-	return max > 0 ? max * Y_HEADROOM : undefined;
+	// zero 只补下界；非正数据的上界仍须显式包含 0，全零数据保留可绘制的跨度。
+	return max > 0 ? max * Y_HEADROOM : finite.every((v) => v === 0) ? 1 : 0;
 }
 
 // nice 把值域两端取整到整刻度，轴顶因此正好压在带标签的那一档上。升级时以「nice 会
@@ -487,7 +488,8 @@ function headroomMax(values) {
 // 显式写死而不是依赖默认值：Column 与 DualAxes 的默认选项里都带着 nice: true，
 // 不写就等于把这个决定交给引擎。
 function yScale({ key, domainMin, domainMax }) {
-	const scale = { nice: true };
+	// 包含零基线，而非把下界锁死为零：折线与双轴同样适用，负值仍可向下展开。
+	const scale = { nice: true, zero: true };
 	if (key !== undefined) {
 		scale.key = key;
 		// DualAxes 默认把每个 child 的 y 设成 independent，独立后 key 失效、
@@ -961,12 +963,14 @@ function buildChartFromRows({ rows, attrs, attributes, xKey, common: baseCommon 
 			});
 		} else {
 			// combo 两侧共用同一段值域，左右轴刻度因此互为镜像。
-			const domainMax = headroomMax([
+			const values = [
 				...barLong.map((d) => d.barValue),
 				...lineLong.map((d) => d.lineValue),
-			]);
-			barY = yScale({ key: "barY", domainMin: 0, domainMax });
-			lineY = yScale({ key: "lineY", domainMin: 0, domainMax });
+			].filter(Number.isFinite);
+			const domainMin = Math.min(0, ...values);
+			const domainMax = headroomMax(values);
+			barY = yScale({ key: "barY", domainMin, domainMax });
+			lineY = yScale({ key: "lineY", domainMin, domainMax });
 		}
 		// 三个 child 共用同一条 x scale，而 G2 按 scale 分组合并 guide、后写的覆盖
 		// 先写的，所以 highlight 的配置得每个 child 各带一份且完全一致。每次调用返回
@@ -1085,19 +1089,23 @@ function buildChartFromRows({ rows, attrs, attributes, xKey, common: baseCommon 
 		(d) => type === "line" || d.value !== null,
 	);
 	const formatter = valueFormatterFor(unit);
-	// stacked-bar 的视觉上限是每期堆叠和，其余按单值最大。
+	// G2 分别堆叠正负值，不能用相抵后的净和作为上界。
+	// 同时保留负值端点，headroomMax 才能区分全负与全零数据。
 	const yMax =
 		type === "stacked-bar"
 			? headroomMax(
 					[
 						...data
 							.reduce((m, d) => {
-								if (Number.isFinite(d.value))
-									m.set(d.period, (m.get(d.period) ?? 0) + d.value);
+								if (Number.isFinite(d.value)) {
+									const totals = m.get(d.period) ?? [0, 0];
+									totals[d.value < 0 ? 0 : 1] += d.value;
+									m.set(d.period, totals);
+								}
 								return m;
 							}, new Map())
 							.values(),
-					],
+					].flat(),
 				)
 			: headroomMax(data.map((d) => d.value));
 	const highlightX = highlightAxisX(highlight);
