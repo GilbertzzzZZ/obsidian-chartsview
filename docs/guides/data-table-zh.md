@@ -23,7 +23,7 @@
 **成对标签 · 内联数据**（主要形式）：属性写在开标签上，payload 写在标签体内。
 
 ````text
-<DataTable title="示例明细" columns="item,amount,note">
+<DataTable title="Line items" columns="item,amount,note">
 ```csv
 item,amount,note
 sample-a,10,ok
@@ -39,7 +39,7 @@ sample-b,5,watch
 ```text
 <DataTable
   dataset="demo.dataset.json"
-  columns="AnchorDate,营收"
+  columns="AnchorDate,Revenue"
   granularity="month"
   granularityOptions="month,quarter"
 />
@@ -52,7 +52,7 @@ sample-b,5,watch
 ````text
 ```datatable
 ---
-title: "示例明细"
+title: "Line items"
 columns: "item,amount,note"
 ---
 item,amount,note
@@ -67,7 +67,7 @@ sample-b,5,watch
 ```datatable
 ---
 dataset: "demo.dataset.json"
-columns: "AnchorDate,营收"
+columns: "AnchorDate,Revenue"
 granularity: month
 granularityOptions: "month,quarter"
 ---
@@ -107,7 +107,7 @@ granularityOptions: "month,quarter"
 **dataset 模式**（有 `dataset` 属性时）：**与内联 payload 完全互斥**。行数据 100% 来自外部 manifest + 数据文件，**body 必须为空**，时间范围写成 `from` / `to` 属性：
 
 ````text
-<DataTable dataset="demo.dataset.json" columns="AnchorDate,营收" from="2025-01-01" to="2025-06-01" />
+<DataTable dataset="demo.dataset.json" columns="AnchorDate,Revenue" from="2025-01-01" to="2025-06-01" />
 ````
 
 代码块写法一字不差，同样 body 为空：
@@ -116,7 +116,7 @@ granularityOptions: "month,quarter"
 ```datatable
 ---
 dataset: "demo.dataset.json"
-columns: "AnchorDate,营收"
+columns: "AnchorDate,Revenue"
 from: "2025-01-01"
 to: "2025-06-01"
 ---
@@ -132,19 +132,19 @@ to: "2025-06-01"
 红色错误框（就地透出根因，前缀均为 `Mosaic: `）：
 
 ```text
-内联 payload 为空或列集合为空
+Empty inline payload, or an empty column set
 → Mosaic: DataTable requires CSV, JSON, or a Markdown table.
 
-dataset 模式的 body 非空（互斥冲突，写什么都一样）
+A non-empty body in dataset mode (they are exclusive; the content does not matter)
 → Mosaic: Provide either dataset= or an inline body, not both.
 
-dataset 属性值为空字符串
+An empty dataset attribute value
 → Mosaic: dataset must point to a .dataset.json manifest.
 
-granularity 不在 granularityOptions 展开的集合里
+granularity outside the set expanded from granularityOptions
 → Mosaic: granularity must be included in granularityOptions.
 
-granularityOptions 出现 day/week/month/quarter 之外的值
+granularityOptions containing anything but day/week/month/quarter
 → Mosaic: granularityOptions supports day, week, month, and quarter.
 ```
 

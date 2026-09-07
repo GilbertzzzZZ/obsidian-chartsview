@@ -96,19 +96,19 @@
 
 ```text
 <Chart
-  title="示例趋势"
+  title="Revenue trend"
   dataset="data/schema/example.dataset.json"
   type="combo"
   x="period"
-  lines="总量"
-  bars="分项A,分项B"
-  unit="件"
+  lines="Total"
+  bars="Segment A,Segment B"
+  unit="items"
   labels="all"
   from="2025-01-01"
   to="2025-12-01"
   granularity="month"
   granularityOptions="month,quarter"
-  note="口径说明写这里。"
+  note="Definition notes go here."
 />
 ```
 
@@ -120,13 +120,13 @@
 红色错误框（就地透出根因）：
 
 ```text
-<Chart dataset="不存在的路径.dataset.json" type="line" x="period" />
+<Chart dataset="no-such-path.dataset.json" type="line" x="period" />
 → Mosaic: Dataset manifest not found in vault: ...
 
-<Chart title="缺数据来源" type="line" x="period" />
+<Chart title="No data source" type="line" x="period" />
 → Mosaic: Chart needs dataset= or an inline CSV body.
 
-<Chart dataset="..." from="2025-01-15" ... />（月度源，from 未对齐月初）
+<Chart dataset="..." from="2025-01-15" ... />   (monthly source, from not on a month start)
 → Mosaic: Dataset query from must identify a month source period start.
 
 <Chart dataset="..." granularity="week" granularityOptions="month,quarter" ... />
@@ -160,9 +160,9 @@
 **写法**：属性写在开标签且**开标签必须写在同一行**，CSV 用围栏块内嵌于标签体，语言标注 `csv` 可省略：
 
 ````text
-<Chart title="示例" type="combo" x="month" bars="指标A" lines="指标B" labels="all">
+<Chart title="Example" type="combo" x="month" bars="Metric A" lines="Metric B" labels="all">
 ```csv
-month,指标A,指标B
+month,Metric A,Metric B
 2025-01,120,140
 2025-02,140,150
 2025-03,160,155
@@ -180,20 +180,20 @@ month,指标A,指标B
 红色错误框：
 
 ````text
-granularity="month" 等外部数据集属性用于内联数据
+An external-dataset attribute such as granularity="month" used with inline data
 → Mosaic: Inline data does not support the "granularity" attribute (dataset charts only).
 
-series="不存在的列"
-→ Mosaic: Inline CSV has no "不存在的列" column.
+series="NoSuchColumn"
+→ Mosaic: Inline CSV has no "NoSuchColumn" column.
 
-数值列写了非数字（如 2025-01,abc）
-→ Mosaic: Inline CSV row 2: "指标A" value "abc" is not a number.
+A non-number in a numeric column (for example 2025-01,abc)
+→ Mosaic: Inline CSV row 2: "Metric A" value "abc" is not a number.
 
-未加引号的千分位分隔符会多出一个单元格（`period,value` 后接 `April,1,234`）
+An unquoted thousands separator adds an extra cell (`period,value` followed by `April,1,234`)
 → Mosaic: Inline CSV row 2 contains more values than headers.
-数值应写成 `April,1234`。文本字段中带引号的逗号仍然有效（`"April, revised",1234`），空尾字段也仍然有效（`April,1234,,`）。
+Write the numeric value as `April,1234`. A quoted comma in a text field remains valid (`"April, revised",1234`), as do empty trailing fields (`April,1234,,`).
 
-开标签写了 dataset="..." 同时标签体又带 CSV
+dataset="..." on the opening tag while the body also carries CSV
 → Mosaic: Provide either dataset= or an inline CSV body, not both.
 ````
 
@@ -215,13 +215,13 @@ series="不存在的列"
 ````text
 ```chart
 ---
-title: "示例趋势"
+title: "Revenue trend"
 dataset: "data/schema/example.dataset.json"
 type: combo
 x: period
-lines: 总量
-bars: "指标A,指标B"
-unit: 件
+lines: Total
+bars: "Metric A,Metric B"
+unit: items
 granularityOptions: "month,quarter"
 ---
 ```
@@ -232,12 +232,12 @@ granularityOptions: "month,quarter"
 ````text
 ```chart
 ---
-title: "示例趋势"
+title: "Revenue trend"
 type: line
-series: "指标A,指标B"
-unit: 件
+series: "Metric A,Metric B"
+unit: items
 ---
-month,指标A,指标B
+month,Metric A,Metric B
 2025-01,120,140
 2025-02,140,150
 2025-03,160,155
@@ -251,19 +251,19 @@ month,指标A,指标B
 代码块一旦声明为 `chart` 就必定被接管，所有错误都以红色错误框呈现（没有原文回落）：
 
 ````text
-缺少 "---" 开头的属性区
+No leading "---" attribute section
 → Mosaic: Block must start with a "---" attribute section.
 
-属性区没有闭合的 "---"
+The attribute section has no closing "---"
 → Mosaic: The "---" attribute section is missing its closing "---".
 
-属性区里一条都读不出来（整段压根不是属性区）
+Not a single attribute could be read (the section is not an attribute section at all)
 → Mosaic: No attribute could be read from the "---" section (expected flat key: value lines): ...
 
-frontmatter 有 dataset 同时又带 CSV 数据区
+Frontmatter has dataset and the block also carries a CSV data section
 → Mosaic: Provide either dataset= or an inline CSV body, not both.
 
-既没有 dataset 也没有 CSV 数据区
+Neither dataset nor a CSV data section
 → Mosaic: Chart needs dataset= or an inline CSV body.
 ````
 
