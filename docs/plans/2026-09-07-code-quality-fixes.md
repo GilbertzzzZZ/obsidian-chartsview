@@ -113,9 +113,9 @@
 
 ### Step 1: Verify scope and branch
 
-- [ ] Read `AGENTS.md` and its rendering traps, the design documents named in the header, and the affected user guides.
-- [ ] Read the four existing files in `docs/policies/` before changing rendered UI. Follow the repository's archived policy constraints without installing a separate lint toolchain.
-- [ ] Inspect the checkout and distinguish the main checkout from a linked worktree:
+- [x] Read `AGENTS.md` and its rendering traps, the design documents named in the header, and the affected user guides.
+- [x] Read the four existing files in `docs/policies/` before changing rendered UI. Follow the repository's archived policy constraints without installing a separate lint toolchain.
+- [x] Inspect the checkout and distinguish the main checkout from a linked worktree:
 
 ```bash
 git status --short
@@ -125,7 +125,7 @@ git rev-parse --git-dir --git-common-dir
 git worktree list
 ```
 
-- [ ] Preserve unrelated changes. If already on the named implementation branch, continue there. Otherwise create the task branch from the reviewed base or the committed plan branch:
+- [x] Preserve unrelated changes. If already on the named implementation branch, continue there. Otherwise create the task branch from the reviewed base or the committed plan branch:
 
 ```bash
 git switch -c codex/code-quality-fixes
@@ -136,13 +136,14 @@ git switch -c codex/code-quality-fixes
 
 ### Step 2: Confirm the baseline
 
-- [ ] Install from the existing lockfile and run the repository's gates:
+- [x] Run the baseline gates using the existing dependency installation:
 
 ```bash
-npm ci
 npm test
 npm run build
 ```
+
+- **Execution deviation:** `npm ci` was not rerun before the first repair. The final functional commit was subsequently exported to a disposable checkout and passed `npm ci`, all tests, production build, and byte-identical asset comparison; see Execution Results.
 
 - Expected at the recorded baseline: 340 tests pass, TypeScript checking succeeds, and production bundling succeeds.
 - Record the actual Node/npm versions and test count. Stop to identify a pre-existing failure instead of folding unrelated repairs into this plan.
@@ -159,7 +160,7 @@ npm run build
 
 - **Consumes:** `ChartFigure` and captured plot configurations from the existing `loadComponents()` harness.
 - **Produces:** A private `renderTooltipContent(event: unknown, content: TooltipContent): HTMLElement` callback in `Chart.tsx`. It is not exported as a public helper.
-- [ ] Add `unmountRoot` to the existing `loadComponents()` destructuring in `tests/block-chrome.test.mjs`, then append this test:
+- [x] Add `unmountRoot` to the existing `loadComponents()` destructuring in `tests/block-chrome.test.mjs`, then append this test:
 
 ```javascript
 test("chart tooltip renders every text field without HTML", async () => {
@@ -207,13 +208,13 @@ test("chart tooltip renders every text field without HTML", async () => {
 });
 ```
 
-- [ ] Run `node --test --test-name-pattern='chart tooltip renders' tests/block-chrome.test.mjs`.
+- [x] Run `node --test --test-name-pattern='chart tooltip renders' tests/block-chrome.test.mjs`.
 - Expected failure: the captured configuration has no `interaction.tooltip.render` function.
 - The minimal DOM harness does not parse `innerHTML`. Passing this test is necessary, but does not prove the security fix works in Obsidian.
 
 ### Step 2: Add one private DOM renderer
 
-- [ ] Add a local input type and callback in `Chart.tsx`. Build elements with `createElement`, write text with `textContent`, and assign colors through a style property:
+- [x] Add a local input type and callback in `Chart.tsx`. Build elements with `createElement`, write text with `textContent`, and assign colors through a style property:
 
 ```typescript
 interface TooltipContent {
@@ -264,7 +265,7 @@ function renderTooltipContent(_event: unknown, { title, items }: TooltipContent)
 
 ### Step 3: Attach the renderer without replacing interaction settings
 
-- [ ] Import `useMemo` in `Chart.tsx` and extend its local `ConfigProps` interface with the interaction shape it actually consumes:
+- [x] Import `useMemo` in `Chart.tsx` and extend its local `ConfigProps` interface with the interaction shape it actually consumes:
 
 ```typescript
 interaction?: Record<string, unknown> & {
@@ -272,7 +273,7 @@ interaction?: Record<string, unknown> & {
 };
 ```
 
-- [ ] Inside `Chart`, derive the plot configuration and spread `plotConfig` instead of `config` into `PlotComponent`:
+- [x] Inside `Chart`, derive the plot configuration and spread `plotConfig` instead of `config` into `PlotComponent`:
 
 ```typescript
 const plotConfig = useMemo(() => ({
@@ -281,7 +282,7 @@ const plotConfig = useMemo(() => ({
     ...config.interaction,
     tooltip: {
       ...config.interaction?.tooltip,
-      render: renderTooltipContent,
+      render: (event: unknown, content: TooltipContent) => renderTooltipContent(event, content),
     },
   },
 }), [config]);
@@ -289,14 +290,15 @@ const plotConfig = useMemo(() => ({
 
 - Keep `onReady`, `attachSizeGuard`, instance cleanup, and the error boundary unchanged.
 - Leave `valueTooltip`, `labelFor`, `toLong`, and combo child mark tooltip definitions unchanged. The callback receives already formatted values and must not reformat them.
+- **Implementation correction from real-host evidence:** The locked plots adapter scans callback source text for React-like syntax. Passing the DOM helper directly makes its `document.createElement` calls trigger that heuristic; the adapter then treats the returned DOM element as a React child and displays an empty tooltip. Keep the small forwarding callback above, and test it against the installed adapter detector. This replaces the original direct-helper assignment without changing the plain-text contract or adding dependencies.
 
 ### Step 4: Verify and document the boundary
 
-- [ ] Rerun the focused test, then `npm test` and `npm run build`.
-- [ ] Complete the real-hover safety checks in Final Integration before declaring this task security-verified.
-- [ ] Add this user contract to `docs/guides/chart.md`, then translate the same statement into `chart-zh.md`: “Tooltip titles, series names, and values are displayed as plain text. HTML markup in data or labels is not rendered.”
-- [ ] Add a short design rule to `docs/design/chart.md`: HTML tooltip construction belongs at the renderer boundary, while source values and canvas labels remain unchanged. Keep the existing document language.
-- [ ] Commit and push only this task's tested files when implementation has been authorized:
+- [x] Rerun the focused test, then `npm test` and `npm run build`.
+- [x] Complete the real-hover safety checks in Final Integration before declaring this task security-verified.
+- [x] Add this user contract to `docs/guides/chart.md`, then translate the same statement into `chart-zh.md`: “Tooltip titles, series names, and values are displayed as plain text. HTML markup in data or labels is not rendered.”
+- [x] Add a short design rule to `docs/design/chart.md`: HTML tooltip construction belongs at the renderer boundary, while source values and canvas labels remain unchanged. Keep the existing document language.
+- [x] Commit and push only this task's tested files when implementation has been authorized:
 
 ```bash
 git add src/render/components/Chart.tsx tests/block-chrome.test.mjs docs/design/chart.md docs/guides/chart.md docs/guides/chart-zh.md
@@ -316,14 +318,14 @@ git push -u origin HEAD
 
 - **Consumes:** The unchanged `buildChartFromTag({ manifest, rows, attributes, granularity })` builder and `ChartFigure`'s existing `initial`/`build` interface.
 - **Produces:** Local `rebuild(candidate?: string): boolean`, returning true only when a fresh chart result has been accepted. No new exported interface.
-- [ ] Add imports to `tests/block-chrome.test.mjs`:
+- [x] Add imports to `tests/block-chrome.test.mjs`:
 
 ```javascript
 import { parseDatasetManifest, parseDatasetData } from "../src/parse/dataset-loader.mjs";
 import { buildChartFromTag } from "../src/render/chart-tag-config.mjs";
 ```
 
-- [ ] Append a test using one complete month but no complete quarter:
+- [x] Append a test using one complete month but no complete quarter:
 
 ```javascript
 test("failed chart granularity keeps the last accepted frame", async () => {
@@ -397,14 +399,14 @@ test("failed chart granularity keeps the last accepted frame", async () => {
 });
 ```
 
-- [ ] Run `node --test --test-name-pattern='failed chart granularity' tests/block-chrome.test.mjs`.
+- [x] Run `node --test --test-name-pattern='failed chart granularity' tests/block-chrome.test.mjs`.
 - Expected failures: the initial builder count is two rather than one, and the later rejected selection activates `quarter` and restores the initial weekly data. Run past the initial-count assertion when isolating the state regression.
-- [ ] Cover the guarded source-return failure in `tests/block-chrome.test.mjs`: after entering source view, make the test builder throw on the next rebuild. Assert that source and a local error remain visible with no new plot render. Allow the next rebuild to succeed and assert that a fresh plot appears and clears the error.
+- [x] Cover the guarded source-return failure in `tests/block-chrome.test.mjs`: after entering source view, make the test builder throw on the next rebuild. Assert that source and a local error remain visible with no new plot render. Allow the next rebuild to succeed and assert that a fresh plot appears and clears the error.
 - Do not replace this fixture with an oversized day query. The density algorithm can choose a readable granularity instead of throwing.
 
 ### Step 2: Store one accepted result
 
-- [ ] Import `useCallback` in `ChartFigure.tsx`. Replace `granularity`, `rebuildEpoch`, and the builder `useMemo` fallback with this state and callback before the effects:
+- [x] Import `useCallback` in `ChartFigure.tsx`. Replace `granularity`, `rebuildEpoch`, and the builder `useMemo` fallback with this state and callback before the effects:
 
 ```typescript
 const [result, setResult] = useState<{ built: BuiltChart; error?: string }>(
@@ -425,7 +427,7 @@ const rebuild = useCallback((candidate = built.granularity): boolean => {
 ```
 
 - Use the already built, fresh `initial` for first render. Never restore `initial` after a failed interaction.
-- [ ] Replace the granularity button props:
+- [x] Replace the granularity button props:
 
 ```tsx
 active={built.granularity}
@@ -434,9 +436,9 @@ onSelect={rebuild}
 
 ### Step 3: Preserve lifecycle rebuilds and the accepted plot
 
-- [ ] In the theme effect use `const onThemeChange = () => { rebuild(); };` and dependency list `[rebuild]`.
-- [ ] Replace the width debounce's epoch increment with `rebuild()` and give the width effect dependency list `[rebuild]`. Preserve the 150 ms debounce, 2 px threshold, zero-width guards, and cleanup.
-- [ ] Replace `toggleSource` with the following guarded transition:
+- [x] In the theme effect use `const onThemeChange = () => { rebuild(); };` and dependency list `[rebuild]`.
+- [x] Replace the width debounce's epoch increment with `rebuild()` and give the width effect dependency list `[rebuild]`. Preserve the 150 ms debounce, 2 px threshold, zero-width guards, and cleanup.
+- [x] Replace `toggleSource` with the following guarded transition:
 
 ```typescript
 const toggleSource = () => {
@@ -450,7 +452,7 @@ const toggleSource = () => {
 };
 ```
 
-- [ ] Memoize the chart element on the accepted result and source context. Define it before the figure's return and use `plot` in the rendered branch instead of the existing inline `<Chart>`:
+- [x] Memoize the chart element on the accepted result and source context. Define it before the figure's return and use `plot` in the rendered branch instead of the existing inline `<Chart>`:
 
 ```tsx
 const plot = useMemo(() => (
@@ -479,7 +481,7 @@ const plot = useMemo(() => (
 
 ### Step 4: Verify transitions and update the existing contract
 
-- [ ] Run the new test and the existing “switching back hands the engine a freshly built config” test:
+- [x] Run the new test and the existing “switching back hands the engine a freshly built config” test:
 
 ```bash
 node --test --test-name-pattern='failed chart granularity|freshly built config' tests/block-chrome.test.mjs
@@ -487,10 +489,10 @@ npm test
 npm run build
 ```
 
-- [ ] Complete the theme/width/source/lifecycle checks in Final Integration. A DOM stub cannot validate canvas labels or real observer geometry.
-- [ ] Update the existing controlled-rebuild paragraph in `docs/design/chart.md` to state that the accepted result also owns the active button and that errors do not re-consume plot configuration.
-- [ ] Add to `docs/guides/chart.md`, then its Chinese mirror: “If a granularity change fails, the last successful chart and its selected granularity remain visible. The block shows the reason, and the next successful rebuild clears the error.”
-- [ ] Commit and push this tested task:
+- [x] Complete the theme/width/source/lifecycle checks in Final Integration. A DOM stub cannot validate canvas labels or real observer geometry.
+- [x] Update the existing controlled-rebuild paragraph in `docs/design/chart.md` to state that the accepted result also owns the active button and that errors do not re-consume plot configuration.
+- [x] Add to `docs/guides/chart.md`, then its Chinese mirror: “If a granularity change fails, the last successful chart and its selected granularity remain visible. The block shows the reason, and the next successful rebuild clears the error.”
+- [x] Commit and push this tested task:
 
 ```bash
 git add src/render/components/ChartFigure.tsx tests/block-chrome.test.mjs docs/design/chart.md docs/guides/chart.md docs/guides/chart-zh.md
@@ -510,7 +512,7 @@ git push -u origin HEAD
 
 - **Consumes:** Existing `mountBlock`, `renderComponentInto`, `TFile`, and `fakePlugin` helpers in `tests/block-chrome.test.mjs`.
 - **Produces:** No new interface. The existing table cells display scalar text.
-- [ ] Append these tests:
+- [x] Append these tests:
 
 ```javascript
 test("DataTable displays inline boolean and zero cells", async () => {
@@ -560,21 +562,21 @@ test("DataTable displays external typed boolean cells", async () => {
 });
 ```
 
-- [ ] Run `node --test --test-name-pattern='DataTable displays' tests/block-chrome.test.mjs`.
+- [x] Run `node --test --test-name-pattern='DataTable displays' tests/block-chrome.test.mjs`.
 - Expected failure: boolean cell text is empty in both cases.
 
 ### Step 2: Convert only at the display boundary
 
-- [ ] Replace the table cell expression in `DataTableView.tsx`:
+- [x] Replace the table cell expression in `DataTableView.tsx`:
 
 ```tsx
 <td key={col}>{String(row[col] ?? "")}</td>
 ```
 
 - Do not mutate `rows`, change CSV number sniffing, or add coercion in the loader. Nested objects remain outside the flat scalar payload contract.
-- [ ] Rerun the focused test, `npm test`, and `npm run build`.
-- [ ] Add to the payload contract in `data-table.md`, then its Chinese mirror: “Boolean cells from JSON or typed datasets display as `true` or `false`. Null and missing cells remain empty. Numeric zero displays as `0`.”
-- [ ] Commit and push this tested task:
+- [x] Rerun the focused test, `npm test`, and `npm run build`.
+- [x] Add to the payload contract in `data-table.md`, then its Chinese mirror: “Boolean cells from JSON or typed datasets display as `true` or `false`. Null and missing cells remain empty. Numeric zero displays as `0`.”
+- [x] Commit and push this tested task:
 
 ```bash
 git add src/render/components/blocks/DataTableView.tsx tests/block-chrome.test.mjs docs/guides/data-table.md docs/guides/data-table-zh.md
@@ -594,7 +596,7 @@ git push -u origin HEAD
 
 - **Consumes:** `findComponentTags(source)` and the legacy CSV-only `findChartTags(source)` wrapper.
 - **Produces:** No API change. `matchPaired` tracks the active quote character and guards unquoted `<`; `parseAttrs` retains the blanket `<` guard only for self-closing tags.
-- [ ] Append to `tests/chart-tag.test.mjs`:
+- [x] Append to `tests/chart-tag.test.mjs`:
 
 ```javascript
 test("paired tags preserve both quote styles and quoted delimiters", () => {
@@ -642,7 +644,7 @@ test("paired quote repair preserves self-closing boundaries", () => {
 });
 ```
 
-- [ ] Append to `tests/block-entry.test.mjs` to exercise takeover, not just parsed attributes:
+- [x] Append to `tests/block-entry.test.mjs` to exercise takeover, not just parsed attributes:
 
 ```javascript
 test("single quoted paired table title matches double quoted rendering", async () => {
@@ -656,12 +658,12 @@ test("single quoted paired table title matches double quoted rendering", async (
 });
 ```
 
-- [ ] Run `node --test tests/chart-tag.test.mjs tests/block-entry.test.mjs`.
+- [x] Run `node --test tests/chart-tag.test.mjs tests/block-entry.test.mjs`.
 - Expected failure: single-quoted delimiter cases yield no tags, and the single-quoted table does not render.
 
 ### Step 2: Replace the boolean quote toggle
 
-- [ ] In `matchPaired`, replace `quoted` and the scanner conditions with:
+- [x] In `matchPaired`, replace `quoted` and the scanner conditions with:
 
 ```javascript
 let quote = null;
@@ -679,7 +681,7 @@ for (; i < source.length; i += 1) {
 }
 ```
 
-- [ ] In `parseAttrs`, replace its initial unconditional `<` guard with:
+- [x] In `parseAttrs`, replace its initial unconditional `<` guard with:
 
 ```javascript
 if (selfClosing && inner.includes("<")) return null;
@@ -687,10 +689,10 @@ if (selfClosing && inner.includes("<")) return null;
 
 - The paired scanner already rejects unquoted `<`. Keeping the unconditional guard would also reject quoted `<` and leave the repair incomplete. Update the comments describing the two boundary checks to match their responsibilities.
 - Keep all other malformed-tag checks and `matchSelfClosing` unchanged. Do not introduce escaped-quote syntax or multiline host takeover.
-- [ ] Run both focused files, `npm test`, and `npm run build`.
-- [ ] In `tag-syntax.md`, clarify that the same quote character closes a paired-tag value and that quoted `<`/`>` remain literal text in paired tags. State that self-closing tags still reject literal `<` and `/>` inside attribute values. Translate the update into `tag-syntax-zh.md`.
-- [ ] Correct the contradictory Chart guide note that claims `>` only works in double quotes. Single and double quotes both work. Preserve the separate self-closing `<` and `/>` limitations. Update both Chart guide languages.
-- [ ] Commit and push this tested task:
+- [x] Run both focused files, `npm test`, and `npm run build`.
+- [x] In `tag-syntax.md`, clarify that the same quote character closes a paired-tag value and that quoted `<`/`>` remain literal text in paired tags. State that self-closing tags still reject literal `<` and `/>` inside attribute values. Translate the update into `tag-syntax-zh.md`.
+- [x] Correct the contradictory Chart guide note that claims `>` only works in double quotes. Single and double quotes both work. Preserve the separate self-closing `<` and `/>` limitations. Update both Chart guide languages.
+- [x] Commit and push this tested task:
 
 ```bash
 git add src/parse/chart-tag.mjs tests/chart-tag.test.mjs tests/block-entry.test.mjs docs/guides/tag-syntax.md docs/guides/tag-syntax-zh.md docs/guides/chart.md docs/guides/chart-zh.md
@@ -710,7 +712,7 @@ git push -u origin HEAD
 
 - **Consumes:** `buildChartFromInline({ attributes, csv })`, unchanged signature.
 - **Produces:** Error `Inline CSV row N contains more values than headers.` with the existing inline row-number convention, including the header row.
-- [ ] Append to `tests/chart-tag-config.test.mjs`:
+- [x] Append to `tests/chart-tag-config.test.mjs`:
 
 ```javascript
 test("inline chart rejects non-empty cells beyond header width", () => {
@@ -742,7 +744,7 @@ test("inline chart keeps valid quoting and empty-cell behavior", () => {
 });
 ```
 
-- [ ] Append to `tests/block-entry.test.mjs`:
+- [x] Append to `tests/block-entry.test.mjs`:
 
 ```javascript
 test("extra chart CSV cells produce local errors in both entry forms", async () => {
@@ -760,12 +762,12 @@ test("extra chart CSV cells produce local errors in both entry forms", async () 
 });
 ```
 
-- [ ] Run `node --test tests/chart-tag-config.test.mjs tests/block-entry.test.mjs`.
+- [x] Run `node --test tests/chart-tag-config.test.mjs tests/block-entry.test.mjs`.
 - Expected failure: the builder does not throw, and both malformed entry forms render a chart.
 
 ### Step 2: Check row width before projecting columns
 
-- [ ] At the start of `dataRecords.map((record, index) => ...)` in `buildChartFromInline`, add:
+- [x] At the start of `dataRecords.map((record, index) => ...)` in `buildChartFromInline`, add:
 
 ```javascript
 if (record.slice(columns.length).some((value) => String(value).trim() !== "")) {
@@ -774,9 +776,9 @@ if (record.slice(columns.length).some((value) => String(value).trim() !== "")) {
 ```
 
 - Do not silently truncate, join excess cells, or infer that `1,234` means `1234`. A numeric CSV field must still satisfy the existing numeric contract.
-- [ ] Run both focused files, `npm test`, and `npm run build`.
-- [ ] Add the exact error and correction to both Chart guide languages: an unquoted `April,1,234` row has an extra cell, and the numeric value should be written `1234`. Explicitly preserve quoted commas in text fields and empty trailing fields.
-- [ ] Commit and push this tested task:
+- [x] Run both focused files, `npm test`, and `npm run build`.
+- [x] Add the exact error and correction to both Chart guide languages: an unquoted `April,1,234` row has an extra cell, and the numeric value should be written `1234`. Explicitly preserve quoted commas in text fields and empty trailing fields.
+- [x] Commit and push this tested task:
 
 ```bash
 git add src/render/chart-tag-config.mjs tests/chart-tag-config.test.mjs tests/block-entry.test.mjs docs/guides/chart.md docs/guides/chart-zh.md
@@ -794,22 +796,22 @@ git push -u origin HEAD
 
 ### Step 1: Prepare the isolated host checks
 
-- [ ] Locate an existing dedicated test vault and read its `README.md`. Set `MOSAIC_TEST_VAULT` to that vault and `MOSAIC_PLUGIN_DIR` to its Mosaic plugin directory outside this repository.
-- [ ] Inspect the vault worktree before changing fixtures:
+- [x] Locate an existing dedicated test vault and read its `README.md`. Set `MOSAIC_TEST_VAULT` to that vault and `MOSAIC_PLUGIN_DIR` to its Mosaic plugin directory outside this repository.
+- [x] Inspect the vault worktree before changing fixtures:
 
 ```bash
 git -C "$MOSAIC_TEST_VAULT" status --short
 ```
 
 - Preserve unrelated notes and `.obsidian/` state. Never deploy test probes into the daily-use vault.
-- [ ] Install the tested build using `npm run install:vault`, then reload only Mosaic in the isolated vault using `disablePluginAndSave("mosaic")` and `enablePluginAndSave("mosaic")`.
-- [ ] Extend the existing capability notes rather than creating a second fixture hierarchy. Keep each changed `.md` and `.mdx` byte-identical through the vault's existing `sync-mdx.sh` workflow.
+- [x] Install the tested build using `npm run install:vault`, then reload only Mosaic in the isolated vault using `disablePluginAndSave("mosaic")` and `enablePluginAndSave("mosaic")`.
+- [x] Extend the existing capability notes rather than creating a second fixture hierarchy. Keep each changed `.md` and `.mdx` byte-identical through the vault's existing `sync-mdx.sh` workflow.
 - For Chart and DataTable capabilities, retain the four established sections: `代码块 · 内联`, `代码块 · 外部`, `标签 · 内联`, and `标签 · 外部`. Mark source-specific cases explicitly instead of inventing unsupported input forms.
 - Do not duplicate pure parser/data tests in the vault. Add only real-hover, canvas-state, boolean visibility, and host takeover assertions.
 
 ### Step 2: Prove tooltip safety with real mouse hover
 
-- [ ] Use this synthetic inline probe in the isolated vault. It writes only two in-memory flags and makes no network request:
+- [x] Use this synthetic inline probe in the isolated vault. It writes only two in-memory flags and makes no network request:
 
 ````text
 ```chart
@@ -825,15 +827,15 @@ May,120
 ```
 ````
 
-- [ ] Reset both flags in the isolated host's developer console before each hover:
+- [x] Reset both flags in the isolated host's developer console before each hover:
 
 ```javascript
 window.__mosaicTooltipNameProbe = 0;
 window.__mosaicTooltipTitleProbe = 0;
 ```
 
-- [ ] Hover the first bar using the real mouse path. Confirm that the tooltip becomes visible and shows the literal title and label strings. An absent tooltip is not a pass.
-- [ ] Inspect the actual tooltip and flags:
+- [x] Hover the first bar using the real mouse path. Confirm that the tooltip becomes visible and shows the literal title and label strings. An absent tooltip is not a pass.
+- [x] Inspect the actual tooltip and flags:
 
 ```javascript
 ({
@@ -848,26 +850,26 @@ window.__mosaicTooltipTitleProbe = 0;
 ```
 
 - Expected: both flags remain `0`, visible tooltip text contains the literal probe, and `injectedImages` is `0`.
-- [ ] Repeat in `.md` and `.mdx`, then in the paired Chart form with a fenced CSV body and a single-line opening tag. Do not put blank lines inside the paired tag.
-- [ ] Repeat for `combo` and `combo-dual-axis` by using `bars: revenue`, `lines: rate`, a synthetic numeric `rate` column, and the same label/title probes. Both bar and line items must be safe and visible.
-- [ ] Exercise an external dataset label by placing the name probe in a numeric field's `label` in its manifest. Keep the time field valid. Check both the external code block and external self-closing tag forms.
-- [ ] Check ordinary, non-probe charts in light and dark themes for marker colors, spacing, shared hover, crosshairs, units, and `%`/currency formatting.
+- [x] Repeat in `.md` and `.mdx`, then in the paired Chart form with a fenced CSV body and a single-line opening tag. Do not put blank lines inside the paired tag.
+- [x] Repeat for `combo` and `combo-dual-axis` by using `bars: revenue`, `lines: rate`, a synthetic numeric `rate` column, and the same label/title probes. Both bar and line items must be safe and visible.
+- [x] Exercise an external dataset label by placing the name probe in a numeric field's `label` in its manifest. Keep the time field valid. Check both the external code block and external self-closing tag forms.
+- [x] Check ordinary, non-probe charts in light and dark themes for marker colors, spacing, shared hover, crosshairs, units, and `%`/currency formatting.
 - Delete the two flags from the isolated host console after verification. Do not claim that the stub test or direct callback invocation proves the real hover path.
 
 ### Step 3: Verify state, takeover, and lifecycle visually
 
-- [ ] Use Task 2's weekly fixture in the external chart capability note. Select week → month → quarter. Confirm one monthly point with value `150`, the month button still active, and a local incomplete-quarter error.
-- [ ] Toggle source → rendered, then select week. Confirm the successful transitions clear the error and restore six weekly values without losing numeric labels.
-- [ ] Repeat the accepted monthly view under light/dark changes and narrow/wide note panes. Confirm the active granularity and data stay consistent, and the canvas width follows its visible container.
-- [ ] Scroll the chart out of view and back before counting elements. Confirm no permanent empty section, duplicate chart, or lost labels.
-- [ ] Disable and enable Mosaic three times in the isolated vault. Confirm the chart returns and registered teardowns do not accumulate.
-- [ ] Open a DataTable boolean fixture in both entry forms and file extensions. Confirm `true`, `false`, and `0` are readable, while null/missing cells remain empty.
-- [ ] Open single- and double-quoted `A > B` and `A < B` paired-table fixtures in both file extensions. Confirm identical takeover and titles without relaxing the existing single-line/no-blank-line host rules.
-- [ ] Check the malformed Chart CSV in both entry forms. Confirm its error box stays at that block and adjacent valid content still renders.
+- [x] Use Task 2's weekly fixture in the external chart capability note. Select week → month → quarter. Confirm one monthly point with value `150`, the month button still active, and a local incomplete-quarter error.
+- [x] Toggle source → rendered, then select week. Confirm the successful transitions clear the error and restore six weekly values without losing numeric labels.
+- [x] Repeat the accepted monthly view under light/dark changes and narrow/wide note panes. Confirm the active granularity and data stay consistent, and the canvas width follows its visible container.
+- [x] Scroll the chart out of view and back before counting elements. Confirm no permanent empty section, duplicate chart, or lost labels.
+- [x] Disable and enable Mosaic three times in the isolated vault. Confirm the chart returns and registered teardowns do not accumulate.
+- [x] Open a DataTable boolean fixture in both entry forms and file extensions. Confirm `true`, `false`, and `0` are readable, while null/missing cells remain empty.
+- [x] Open single- and double-quoted `A > B` and `A < B` paired-table fixtures in both file extensions. Confirm identical takeover and titles without relaxing the existing single-line/no-blank-line host rules.
+- [x] Check the malformed Chart CSV in both entry forms. Confirm its error box stays at that block and adjacent valid content still renders.
 
 ### Step 4: Close automated gates and documentation
 
-- [ ] Run the complete test suite and production build after all five repairs:
+- [x] Run the complete test suite and production build after all five repairs:
 
 ```bash
 npm test
@@ -876,16 +878,16 @@ node --input-type=module -e 'import { statSync } from "node:fs"; const bytes = s
 git diff --check
 ```
 
-- [ ] Update the two test-count mentions in `AGENTS.md` to the measured total. Do not treat the historical count as a quota.
-- [ ] Confirm `package.json`, `package-lock.json`, version files, dependency baselines, and unrelated blocks have no changes.
-- [ ] Review English/Chinese guide pairs for identical examples and no contradictory quote, tooltip, granularity, boolean, or CSV statements.
-- [ ] Confirm all implementation changes are committed before exporting `HEAD`. Only the integration documentation may remain uncommitted:
+- [x] Update the two test-count mentions in `AGENTS.md` to the measured total. Do not treat the historical count as a quota.
+- [x] Confirm `package.json`, `package-lock.json`, version files, dependency baselines, and unrelated blocks have no changes.
+- [x] Review English/Chinese guide pairs for identical examples and no contradictory quote, tooltip, granularity, boolean, or CSV statements.
+- [x] Confirm all implementation changes are committed before exporting `HEAD`. Only the integration documentation may remain uncommitted:
 
 ```bash
 git diff HEAD --exit-code -- src tests scripts styles.css esbuild.config.mjs tsconfig.json package.json package-lock.json manifest.json versions.json
 ```
 
-- [ ] Run a clean locked-install build in a disposable checkout and compare all three release-asset checksums. The temporary directory is local-only and must not be recorded in tracked documents:
+- [x] Run a clean locked-install build in a disposable checkout and compare all three release-asset checksums. The temporary directory is local-only and must not be recorded in tracked documents:
 
 ```bash
 MOSAIC_REPRO_DIR="$(mktemp -d)"
@@ -896,7 +898,7 @@ git archive HEAD | tar -x -C "$MOSAIC_REPRO_DIR"
 )
 ```
 
-- [ ] After that build succeeds, compare the assets using Node's portable checksum implementation:
+- [x] After that build succeeds, compare the assets using Node's portable checksum implementation:
 
 ```bash
 node --input-type=module - "$MOSAIC_REPRO_DIR" <<'JS'
@@ -915,8 +917,8 @@ JS
 ```
 
 - Record mismatches rather than substituting an unverified artifact. Do not change the dependency lock to make a comparison pass.
-- [ ] Record results in this plan's completed checkboxes and final delivery, without creating another quality report or version-mapping file. Preserve only portable evidence and synthetic examples.
-- [ ] After `npm test` and `npm run build` pass, commit/push the final `AGENTS.md` count update and verified plan status as one integration documentation commit. Keep pending review or host checkboxes unchecked:
+- [x] Record results in this plan's completed checkboxes and final delivery, without creating another quality report or version-mapping file. Preserve only portable evidence and synthetic examples.
+- [x] After `npm test` and `npm run build` pass, commit/push the final `AGENTS.md` count update and verified plan status as one integration documentation commit. Keep pending review or host checkboxes unchecked:
 
 ```bash
 git add AGENTS.md docs/plans/2026-09-07-code-quality-fixes.md
@@ -928,8 +930,8 @@ git push -u origin HEAD
 ### Step 5: Review and delivery gate
 
 - [ ] Run the `review` skill (`/gstack-review`) against the implementation diff. Fix accepted in-scope findings and rerun the affected tests plus full build before proceeding.
-- [ ] Apply the small-plugin filter to review findings: identify an actual reader/maintainer, a reachable failure, and a repair whose ongoing cost is justified. Do not expand this plan into speculative infrastructure work.
-- [ ] Once implementation and review are approved for shipping, use the `ship` skill (`/gstack-ship`) for commit/push and PR creation. Do not infer permission to merge, tag, or publish a release.
+- [x] Apply the small-plugin filter to review findings: identify an actual reader/maintainer, a reachable failure, and a repair whose ongoing cost is justified. Do not expand this plan into speculative infrastructure work.
+- [ ] **Not authorized in this execution:** Once shipping is separately approved, use the `ship` skill (`/gstack-ship`) for PR creation. Tested implementation commits and pushes are authorized; PR creation, merge, tag, and release publication are not.
 - [ ] Report the branch, verified commit, five repair outcomes, automated test/build results, host version and checks, and every unverified platform or behavior.
 - [ ] Apply the repository's completed-plan archival policy only after implementation and verification finish. Do not mark this plan complete merely because the document has been written.
 
@@ -976,7 +978,8 @@ git push -u origin HEAD
 ## Review Evidence and Coverage
 
 > The five defects are confirmed, and the user approved each repair individually.
-> Planned regression coverage is not executed implementation coverage.
+> The factual reproductions below describe the recorded pre-repair baseline; line references are historical.
+> Executed repair evidence is recorded under Execution Results.
 
 ### Factual evidence
 
@@ -988,42 +991,42 @@ git push -u origin HEAD
 
 ### Code paths and reader flows
 
-- **Legend:** `[EXISTING]` means an existing test or guard, `[PLANNED]` means required implementation coverage, and `[HOST]` means actual Obsidian verification is required.
+- **Legend:** `[EXISTING]` means an existing test or guard, `[REGRESSION]` means executed automated repair coverage, and `[HOST]` means actual Obsidian verification completed on the final functional build.
 - **Test map:** Each numbered branch corresponds to its Task above. No coverage percentage is claimed.
 
 ```text
 Code block / paired tag / external dataset
 |
 +-- chart-tag.mjs: paired opening-tag scan
-|   +-- matching single/double quote -> literal text       [PLANNED T4]
-|   +-- quoted < or > -> retain full attribute value       [PLANNED T4]
-|   +-- malformed boundary -> decline takeover            [PLANNED T4]
-|   +-- self-closing path -> retain its old boundaries    [PLANNED T4]
+|   +-- matching single/double quote -> literal text       [REGRESSION T4]
+|   +-- quoted < or > -> retain full attribute value       [REGRESSION T4]
+|   +-- malformed boundary -> decline takeover            [REGRESSION T4]
+|   +-- self-closing path -> retain its old boundaries    [REGRESSION T4]
 |   `-- reader opens .md/.mdx -> identical visible title   [HOST T4]
 |
 +-- chart-tag-config.mjs: inline CSV row projection
-|   +-- non-empty extra cell -> local row error, no plot   [PLANNED T5]
-|   `-- valid / empty / quoted comma -> existing values   [PLANNED T5]
+|   +-- non-empty extra cell -> local row error, no plot   [REGRESSION T5]
+|   `-- valid / empty / quoted comma -> existing values   [REGRESSION T5]
 |
 +-- DataTableView.tsx: cell output
-|   +-- true / false -> literal text                      [PLANNED T3]
-|   `-- zero / null / missing -> 0 / empty / empty         [PLANNED T3]
+|   +-- true / false -> literal text                      [REGRESSION T3]
+|   `-- zero / null / missing -> 0 / empty / empty         [REGRESSION T3]
 |
 `-- ChartFigure.tsx: accepted chart state
-    +-- first display -> consume fresh initial once       [PLANNED T2]
-    +-- selection succeeds -> replace chart and button   [PLANNED T2]
-    +-- selection fails -> retain accepted frame + error [PLANNED T2]
-    +-- source return fails -> retain source + error      [PLANNED T2]
+    +-- first display -> consume fresh initial once       [REGRESSION T2]
+    +-- selection succeeds -> replace chart and button   [REGRESSION T2]
+    +-- selection fails -> retain accepted frame + error [REGRESSION T2]
+    +-- source return fails -> retain source + error      [REGRESSION T2]
     +-- source return succeeds -> fresh config            [EXISTING + T2]
     +-- theme / width / detach / unload -> safe lifecycle [HOST T2]
     `-- Chart.tsx: tooltip callback
-        +-- title present / empty -> heading / no heading [PLANNED T1]
-        +-- items / empty list -> always a DOM element    [PLANNED T1]
-        +-- marker / formatted value -> preserve display [PLANNED T1]
+        +-- title present / empty -> heading / no heading [REGRESSION T1]
+        +-- items / empty list -> always a DOM element    [REGRESSION T1]
+        +-- marker / formatted value -> preserve display [REGRESSION T1]
         `-- actual hover with note-supplied markup        [HOST T1]
 ```
 
-- **Coverage assessment:** Five defect-specific regression groups are required. The quote repair includes the previously missing second guard and its compatibility checks. The Chart state test also asserts initial build counts and the rejected source-return path.
+- **Coverage assessment:** All five defect-specific regression groups passed. The quote repair includes the previously missing second guard and its compatibility checks. The Chart state test also asserts initial build counts and the rejected source-return path.
 - **Existing protection:** Tests already cover source round trips, unit visibility, local render errors, retained source context, and scalar/parser boundaries. They did not detect the five audited defects.
 - **Scope fit:** There are no LLM calls, servers, database queries, or cross-user operations in these repairs. No evaluations, load-testing service, or additional testing framework is required.
 - **Diagram ownership:** Keep the accepted-state flow in this plan. Update existing lifecycle and parser comments where their facts change instead of copying this diagram into five source files.
@@ -1035,9 +1038,9 @@ Code block / paired tag / external dataset
 - **Table output:** Truthy coercion would erase `false` or zero. Task 3 keeps the nullish empty-cell rule and checks both input sources.
 - **Tag boundaries:** Fixing only the scanner leaves quoted `<` rejected, while changing the self-closing path would expand scope. Task 4 includes both paired checks and self-closing regression assertions.
 - **CSV width:** Silent truncation produces a plausible but incorrect plot, while overly strict width equality rejects accepted empty cells. Task 5 asserts both the local error and retained valid behavior.
-- **Performance conclusion:** Only Task 2 removes confirmed duplicate work: two initial builder calls become one, and rejected selections must not rerun the plot adapter. No elapsed-time or memory improvement has been measured for the proposed implementation.
+- **Performance conclusion:** Only Task 2 removes confirmed duplicate work: two initial builder calls became one, and rejected selections produced no additional plot-adapter render in the regression harness. No elapsed-time or memory improvement has been measured.
 - **Other repairs:** Tooltip DOM creation, scalar conversion, quote tracking, and excess-cell validation are correctness/safety work. They do not justify speedup claims or new caches.
-- **Failure coverage status:** No known critical failure path is left without a verification requirement. All implementation and real-host repair checks remain pending.
+- **Failure coverage status:** No known critical failure path is left without a verification requirement. All five regression groups and all 100 final host-check records passed. Whole-branch review remains pending; cross-platform and Node 22/24 CI execution are not claimed.
 
 ---
 
@@ -1046,13 +1049,65 @@ Code block / paired tag / external dataset
 > Execute the five approved Tasks above without adding another implementation workstream.
 > Effort ranges are planning estimates, not measured execution times or performance results.
 
-- [ ] **T1 (P1, human 1-3 hours / agent 20-60 minutes)** — Close the tooltip HTML boundary using Task 1's source, test, and host checks. Surfaced by architecture/security review.
-- [ ] **T2 (P2, human 1-3 hours / agent 20-60 minutes)** — Retain the accepted chart and verify build counts using Task 2. Surfaced by architecture/state and performance review.
-- [ ] **T3 (P2, human 20-40 minutes / agent 5-15 minutes)** — Display boolean cells using Task 3. Surfaced by code-quality review.
-- [ ] **T4 (P2, human 30-60 minutes / agent 10-25 minutes)** — Repair both paired-tag checks and preserve self-closing behavior using Task 4. Surfaced by code-quality and test review.
-- [ ] **T5 (P2, human 20-40 minutes / agent 5-15 minutes)** — Reject non-empty excess chart cells using Task 5. Surfaced by code-quality review.
+- [x] **T1 (P1, human 1-3 hours / agent 20-60 minutes)** — Close the tooltip HTML boundary using Task 1's source, test, and host checks. Surfaced by architecture/security review.
+- [x] **T2 (P2, human 1-3 hours / agent 20-60 minutes)** — Retain the accepted chart and verify build counts using Task 2. Surfaced by architecture/state and performance review.
+- [x] **T3 (P2, human 20-40 minutes / agent 5-15 minutes)** — Display boolean cells using Task 3. Surfaced by code-quality review.
+- [x] **T4 (P2, human 30-60 minutes / agent 10-25 minutes)** — Repair both paired-tag checks and preserve self-closing behavior using Task 4. Surfaced by code-quality and test review.
+- [x] **T5 (P2, human 20-40 minutes / agent 5-15 minutes)** — Reject non-empty excess chart cells using Task 5. Surfaced by code-quality review.
 - **Execution lane:** One sequential lane, T1 through T5, followed by Final Integration. The tasks share renderer tests and user guides, so parallel implementation would introduce overlapping edits without removing a dependency.
 - **Additional tasks:** None beyond the five approved repairs and their existing integration gate.
+
+---
+
+## Execution Results
+
+> Implementation was authorized on 2026-09-07: create a branch, commit the plan, and execute with subagents.
+> The five repairs and integration verification are complete; whole-branch review is still in progress.
+
+### Commits and scope
+
+- Branch: `codex/code-quality-fixes`, created from the recorded baseline and pushed.
+- Plan: `4b87f64e7943317bfa6543e19f356c2414d01664`.
+- Tooltip: `6ab68b415b221b0b19ef14baf7ce3512d6c347ce`; actual-host adapter correction: `2abdea36c4da3ae61f4e337ccc0388ed3d7ce86b`.
+- Accepted chart state: `cd1deb947e3706c0b172ddb4ee1bc136a438aa61`.
+- Boolean cells: `bb1ab6e5ab54be3ffa38f3a3f9279488a77670ee`.
+- Paired quotes: `75349a15b211a603aa21436deefac7e0aa51cac7`.
+- Excess CSV cells and final functional build: `bb6fbaae3ea3d799edcfa38366d1bf42dd9611ac`.
+- Existing Chinese guide examples aligned to English: `269b52945a658a143f5bb995fc679cc87429873a`. All 14 fenced examples in the touched Chart/DataTable guide pairs are byte-identical; prose retains its language.
+- Every task passed its independent spec/quality review. The tooltip adapter correction passed a scoped re-review. No task-review finding remains open.
+- No dependency, lockfile, version, upstream baseline, CI configuration, or frozen `src/parse/blocks/` file changed. No PR, merge, tag, or release was created.
+
+### Automated and reproducible-build evidence
+
+- Final `npm test`: **352/352 passed**, with no failures, skips, cancellations, or pending tests. Baseline: 340 tests.
+- `npm run build`: TypeScript checking and production esbuild passed. `git diff --check` passed.
+- Runtime used for these checks: Node `26.8.1`, npm `11.19.0`. The existing Node 22/24 CI matrix remains unchanged and was not executed in this local verification.
+- A clean export of the final functional commit passed `npm ci`, all 352 tests, and production build. Installation audited 132 packages with zero reported vulnerabilities.
+- Non-blocking installation warning: npm 11 reported the existing `esbuild@0.28.2` postinstall script as not yet covered by `allowScripts`. Installation and build succeeded; no approval/configuration or dependency change was made.
+- Bundle size: **1,655,004 bytes**, below **1,843,200 bytes**. No generated asset was committed.
+- Clean and working builds produced identical SHA-256 values for all three release assets:
+
+| Asset | SHA-256 |
+| --- | --- |
+| `main.js` | `4670d054e86c75021543f2c22c194286bdedc349eca1249bc8082aa0ac723970` |
+| `manifest.json` | `3deb2ee7b9bc7432ff75c25b17d47f7d241c7a295c38acfe24318489b449e13a` |
+| `styles.css` | `c241855bff747caa718038b5ea78e0c84eeeddaacc5fd2b1731bec1d71e467d0` |
+
+### Actual host evidence
+
+- Host: isolated **Obsidian 1.13.7 on Linux**, plugin version `1.1.5`, loaded from final functional build `bb6fbaae3ea3d799edcfa38366d1bf42dd9611ac`. Later commits contain documentation only.
+- **80/80 actual mouse hovers:** `.md`/`.mdx`, light/dark, code/tag and inline/external forms, bar/combo/dual-axis charts, including both bar and line targets. Every tooltip was visible with literal probe text; zero injected images or executed probe flags. Currency `$ 1,234.5`, percentage `12.5%`, shared items, markers, and spacing remained visible.
+- **4/4 ordinary hover checks:** line crosshairs and combo hover bands preserved their light/dark colors, opacity, and geometry; markers, shared values, spacing, and the applicable `people` unit were visible. These ordinary notes have no currency/percentage field; those formats were verified in the preceding probe matrix.
+- **10/10 state/lifecycle records:** four code/tag × extension transitions, four width/theme combinations, one viewport round trip, and one three-cycle plugin reload check. Quarter rejection retained the accepted monthly value `150` and active month button; source/rendered transitions cleared the error and restored six weekly values. The canvas matched its container at narrow and wide widths. Each disable cleared old teardowns and canvases; each enable returned to two figures, canvases, and teardown registrations without errors.
+- **6/6 boundary records:** boolean cells in all four forms, paired single/double quotes with literal `<`/`>`, and two malformed CSV forms with adjacent valid charts, each in `.md` and `.mdx`. CSV errors stayed at their own blocks and read exactly `Mosaic: Inline CSV row 2 contains more values than headers.`.
+- All five changed fixture pairs are byte-identical across `.md`/`.mdx`. Benign in-memory probe flags were removed. Raw host observations and disposable runners remain local-only; no private paths or host data are committed.
+
+### Superseded approach and verification limits
+
+- **Superseded during execution:** assigning the DOM-building tooltip helper directly to the plots callback. Real hover found an empty tooltip because the locked adapter treated DOM construction as React output. A minimal forwarding callback preserves the native-element contract; the installed detector regression and all real hovers now pass.
+- Only Task 2 has measured work-count reduction: initial builder calls **2 → 1**, with **0 extra plot renders** for a rejected selection. No elapsed-time, memory, or broad performance claim is made for these correctness repairs.
+- Windows, macOS, mobile Obsidian, and execution on the Node 22/24 CI matrix remain unverified. Source-return builder failure is covered by the component regression, not forced in the real host.
+- Whole-branch review is pending. Shipping requires a separate instruction; no PR or release readiness claim follows from passing local gates alone.
 
 ---
 
@@ -1064,7 +1119,9 @@ Code block / paired tag / external dataset
 | Review | Trigger | Runs | Status | Findings |
 | --- | --- | --- | --- | --- |
 | Engineering plan | `plan-eng-review` | 1 | CLEAR (PLAN) | Five defects confirmed and five repair decisions accepted, with the incomplete quote repair corrected |
-| Baseline code audit | `review` | 1 | ISSUES OPEN (CODE) | One P1 and four P2 defects remain to be implemented |
+| Baseline code audit | `review` | 1 | HISTORICAL FINDINGS REPAIRED | One P1 and four P2 defects repaired with regression and host evidence |
+| Implementation task reviews | Independent task reviewers | 6 | CLEAR (TASKS) | Five tasks plus one scoped tooltip-adapter re-review; no open findings |
+| Whole-branch code review | `review` and final independent reviewer | In progress | PENDING | Final assessment has not yet completed |
 | Independent plan review | Optional outside voice | 0 | Not run | No independent-review claim |
 | Design review | `plan-design-review` | 0 | Not run | Existing appearance is preserved, with real-host checks required |
 | Product/DX review | Optional plan reviews | 0 | Not run | No new product or developer workflow introduced |
@@ -1078,8 +1135,8 @@ Code block / paired tag / external dataset
 - **Parallelization:** One sequential implementation lane because the repairs share tests and guides.
 - **Decision summary:** All five repair contracts were explicitly accepted by the user. The decisions concern repair behavior, not competing coverage levels, so no completeness score is assigned.
 - **Fresh baseline validation:** `npm test` passed 340/340 and `npm run build` passed on Node `26.8.1`, npm `11.19.0`. The unchanged bundle is `1,653,514` bytes, below the `1,843,200`-byte limit. The plan's 21 JavaScript/TypeScript/TSX snippets passed syntax checks with interface/JSX fragments placed in their intended enclosing syntax.
-- **Verification boundary:** These are baseline results and focused review probes, not results for an implemented repair. The new regression suite, repaired real-hover/canvas behavior, Node 22/24 CI, clean-build equivalence for the repairs, and macOS/Windows/mobile behavior remain unverified.
-- **Delivery state:** Only this plan has changed in the repository. It is uncommitted, and no production source, dependency, version, or release was modified. The subsequent implementation must pass its own code review and verification gates.
-- **VERDICT:** Engineering plan CLEARED for the five approved repairs, pending an implementation instruction. Code safety and release readiness are not cleared by this plan review.
+- **Verification boundary:** The preceding baseline measurements are historical. Execution Results records the repaired 352-test suite, production build, clean-build equivalence, and actual host checks separately. Node 22/24 CI and macOS/Windows/mobile behavior remain unverified.
+- **Delivery state:** The plan and all five tested repairs are committed and pushed on the named branch. Integration documentation is being finalized; whole-branch review remains pending. Dependencies, versions, upstream baseline, and releases are unchanged.
+- **VERDICT:** Five approved repairs implemented, task-reviewed, and verified in the recorded local environment. Final whole-branch review and separately authorized shipping remain pending.
 
 NO UNRESOLVED DECISIONS
