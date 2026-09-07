@@ -35,6 +35,7 @@
 ### Step 1 · Local verification
 
 ```bash
+npm ci          # Install the committed lockfile without changing it
 npm test        # All tests must pass
 npm run build   # TypeScript checking and the production bundle must pass
 ```
@@ -61,10 +62,12 @@ git push origin 1.0.0
   - `main.js`
   - `manifest.json`
   - `styles.css`
+- Before publishing the draft, confirm that the workflow checked out the release tag's final commit and built that same commit. Peel annotated tags with `git rev-parse "refs/tags/<version>^{commit}"`; compare the full commit with the workflow checkout log and build attestation. A matching version string alone is insufficient.
+- Read `docs/engineering/openglance-rendering-sync.md` at that release commit for its upstream baseline and verification status. Do not substitute the latest branch copy or describe a pending adoption as verified.
 - When the workflow finishes, open the repository's Releases page, edit the draft, add release notes, and select **Publish release**.
 - Attach the three files individually. Obsidian downloads them from the release whose tag matches the manifest version.
 - Do not substitute the source archive for the assets. The source archive does not contain the untracked build output `main.js`.
-- If the workflow fails, run `npm run build` locally, create the release manually on GitHub with the version tag, and upload all three assets.
+- If the workflow fails and a manual build is necessary, use a clean checkout of the exact release tag, run `npm ci`, `npm test`, and `npm run build`, and record the full build commit. Confirm it equals the tag's final commit before uploading all three assets. Never upload a bundle built from a different branch or a dirty working tree.
 
 ### Step 4 · Submit to the directory
 
