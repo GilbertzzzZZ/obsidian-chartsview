@@ -93,7 +93,7 @@ export const DataTableView = ({
 							{rows.map((row, rowIndex) => (
 								<tr key={rowIndex}>
 									{columns.map((col) => (
-										<td key={col}>{row[col] ?? ""}</td>
+										<td key={col}>{String(row[col] ?? "")}</td>
 									))}
 								</tr>
 							))}

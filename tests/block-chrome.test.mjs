@@ -180,6 +180,52 @@ test("every DataTable renders the same way, whatever its size", async () => {
 	assert.equal(a.cardClass, "table-card", "卡片上不该挂状态 class");
 });
 
+test("DataTable displays inline boolean and zero cells", async () => {
+	const host = await mountBlock({ name: "DataTable", body: JSON.stringify([
+		{ name: "Alpha", enabled: true, amount: 0, note: null },
+		{ name: "Beta", enabled: false, amount: -2 },
+	]) }, { columns: "name,enabled,amount,note" });
+	try {
+		assert.deepEqual(queryAll(host, "td").map((cell) => cell.textContent),
+			["Alpha", "true", "0", "", "Beta", "false", "-2", ""]);
+	} finally {
+		unmountRoot(host);
+		host.remove();
+	}
+});
+
+test("DataTable displays external typed boolean cells", async () => {
+	const files = {
+		"notes/flags.dataset.json": JSON.stringify({
+			schemaVersion: 1, id: "flags", data: "flags.csv",
+			grain: ["date"], primaryKey: ["date"],
+			time: { field: "date", sourceGranularity: "day" },
+			fields: [
+				{ name: "date", type: "date", required: true },
+				{ name: "enabled", type: "boolean", rollup: "last" },
+			],
+		}),
+		"notes/flags.csv": "date,enabled\n2026-04-01,true\n2026-04-02,false",
+	};
+	const plugin = fakePlugin({ app: { vault: {
+		getAbstractFileByPath: (path) => path in files ? Object.assign(new TFile(), { path }) : null,
+		cachedRead: (file) => Promise.resolve(files[file.path]),
+	} } });
+	const host = mountHost();
+	try {
+		await renderComponentInto(plugin, host, { ...CONTEXT, sourcePath: "notes/report.md" }, {
+			name: "DataTable", body: null,
+			attributes: { dataset: "flags.dataset.json", columns: "enabled", granularity: "day" },
+		});
+		await flush();
+		assert.equal(query(host, ".mosaic-error"), null);
+		assert.deepEqual(queryAll(host, "td").map((cell) => cell.textContent), ["true", "false"]);
+	} finally {
+		unmountRoot(host);
+		host.remove();
+	}
+});
+
 // --- 按钮 ---
 
 test("a Chart block carries three icon buttons; without the export setting, two", async () => {

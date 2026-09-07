@@ -102,6 +102,8 @@ granularityOptions: "month,quarter"
 - **No field-alias normalisation.** Column names are the raw keys, unless `columns` reorders or trims them.
 - **Number sniffing.** Only cells matching `^-?\d+(?:\.\d+)?$` exactly (a plain integer or decimal) become numbers. Everything else — empty strings, dates, `"12%"`, `"1,234"` — stays a string and is displayed verbatim.
 
+Boolean cells from JSON or typed datasets display as `true` or `false`. Null and missing cells remain empty. Numeric zero displays as `0`.
+
 **Dataset mode** (with a `dataset` attribute). **Completely exclusive with an inline payload.** Rows come entirely from the external manifest plus its data file, **the body must be empty**, and the time range is written as `from` / `to` attributes:
 
 ````text
