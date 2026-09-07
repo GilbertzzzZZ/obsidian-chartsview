@@ -73,10 +73,11 @@ One contract shared by all three entries. In the tag forms, one attribute per li
 
 - `bar` and `grouped-bar` are two names for the same chart: one series draws one column, and n series draw n columns side by side in every period. Write whichever name reads better.
 - `stacked-bar`: the same n series stacked into one column per period instead of placed side by side.
-- `combo`: one scale for both — the left and right axes are pinned to the same `min: 0` and the same max. Legend order follows the order the attributes are written in (write `lines` before `bars` and the line series come first).
+- `combo`: bars and lines share the same zero-inclusive range, including negative values when present. Legend order follows the order the attributes are written in (write `lines` before `bars` and the line series come first).
 - `combo-dual-axis`: independent left and right axes, with bars always on the left.
 - The granularity switcher appears whenever at least one candidate survives the intersection with what the data supports. A lone button says this data has exactly one view; hiding the control would read as the chart having no granularity at all.
-- Every chart adds 8% of headroom above its y-axis maximum (for stacked bars, computed on each period's total).
+- Every Y axis includes zero, including line charts and both sides of a dual-axis chart. Nonnegative data starts at zero; negative-only data ends at zero; mixed-sign data extends on both sides. All-zero data uses a `0–1` range.
+- A positive Y-axis maximum gets 8% headroom (for stacked bars, computed on each period's total), then bounds round outward to readable ticks. Manual Y-axis bounds are not supported.
 - Line nodes are solid dots. Value labels are thousands-grouped with at most two decimals, and collide gracefully — shown when they fit, hidden when they do not.
 - Legend markers are rounded squares for column series and a rounded bar for line series. Charts follow Obsidian's light and dark themes and reskin in place the moment the theme changes; the figure carries a faint themed border.
 

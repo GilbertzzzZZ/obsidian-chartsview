@@ -146,6 +146,7 @@ The initial inspection compared `45f61a94873d81eaa9bd18aa97d31239f300080d` with 
 **Implemented in Mosaic**
 
 - Chart and shared card headings use the upstream title size, weight, and line height; notes use the upstream readable line height.
+- Chart Y-axis domains include zero, including line charts and both dual axes. Negative values remain visible, single-axis combinations share their full range, and all-zero data uses a nondegenerate `0–1` domain. Manual axis bounds are outside the shared contract.
 - MetricGrid uses the upstream label, value, delta, and note hierarchy.
 - Timeline uses the upstream marker alignment, content spacing, heading rhythm, and secondary body color.
 - DecisionBox uses the upstream bordered badges and definition-list typography.
@@ -154,6 +155,7 @@ The initial inspection compared `45f61a94873d81eaa9bd18aa97d31239f300080d` with 
 **Adapted or retained**
 
 - Chart remains responsive through AntV and Mosaic's width listener instead of inheriting OpenGlance's static SVG minimum width.
+- Mosaic retains AntV tick rounding and its positive-maximum headroom calculation; zero-baseline agreement does not imply identical tick positions or padding for mixed-sign data.
 - Colors continue to use Obsidian theme variables; typed FlowDiagram nodes retain Mosaic's theme-safe color mixing.
 - Mosaic retains the shared outer frame, normal-flow toolbar, source view, warning treatment, and host lifecycle behavior documented in its design guides.
 - FlowDiagram canvas sizing is scoped to `.mosaic-flow-scroll > svg`; the shared toolbar's native SVG icons must not inherit the canvas minimum width.
@@ -256,3 +258,11 @@ git -C "$OPENGLANCE_REPO" diff --name-status "$BASE_COMMIT" "$TARGET_COMMIT" -- 
 - Computed titles were `15px`, weight `760`, line height `20.25px` throughout. Native toolbar icons remained `18px`. FlowDiagram retained a `720px` canvas inside a `266px` narrow scroll container; scrolling reached `454px` without widening the page. Status accents, timeline spacing, badges, diagram labels, arrows and node notes were inspected in the rendered output.
 - Chart hover displayed the expected date, series and value in both themes. In-place theme switching retained the same figure with four chart canvases and no error boxes. Source/rendered toggles preserved titles and units and restored the rendered content. A deliberate invalid block showed one local error followed by a healthy card in both file formats and both themes.
 - Limits: no macOS, Windows, mobile-device or custom-theme runtime verification; no exhaustive pixel comparison with the OpenGlance application. Upstream installer bytes/signatures were not checked because no installer is consumed. No Mosaic release was published, so release-tag/build-commit equality remains a publishing gate rather than a completed release verification.
+
+### Y-axis zero-baseline follow-up · 2026-09-07
+
+- The adopted upstream baseline is unchanged. This correction aligns previously divergent Y-axis behavior with the same rendering contract.
+- All 336 tests passed, including positive, negative-only, mixed-sign combination, and all-zero domain regressions through the plotting adaptor and scale inference. TypeScript checking and the production build passed.
+- Actual Obsidian `1.13.7` on Linux passed 40 scenarios in the isolated synthetic-data vault: 10 Chart fixtures in both themes at 1200 px, six nonnegative chart types in both themes at 420 px, and additional line/dual-axis `.mdx` checks at both widths and themes. Each scenario exercised all four inline/external code-block/tag forms; all 10 fixture pairs were byte-identical.
+- Rendered scales included zero with visible zero ticks, preserved negative values, agreed across entry forms, and produced no chart errors or page overflow. Quarter aggregation and source/rendered round trips retained the expected dual-axis domains.
+- Limits remain Linux/default-theme coverage only. Manual bounds and configurable dual-axis series assignment are not implemented by this correction.

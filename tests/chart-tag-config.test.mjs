@@ -44,6 +44,7 @@ const PLOTS = {
 const G2 = (path) =>
 	require(`@ant-design/plots/node_modules/@antv/g2/lib/${path}`);
 const { addGuideToScale } = G2("runtime/transform.js");
+const { inferScale } = G2("runtime/scale.js");
 
 function asEngineSees(built) {
 	const Plot = PLOTS[built.chartType];
@@ -1846,16 +1847,81 @@ test("every chart rounds its axis top onto a labelled tick", () => {
 	}
 });
 
-test("headroom plus unrounded ticks would leave a dual axis nearly bare", () => {
-	// this is why the dual axis rounds too. Its domain has no zero floor, so the 8%
-	// headroom lands the top on an unround number, the optimiser answers with a
-	// coarser step, and the two ticks that fall outside the domain get dropped.
-	const raw = [42000, 64500 * 1.08]; // the demo dataset's revenue axis
-	const bare = wilkinsonExtended(...raw, 5).filter((t) => t >= raw[0] && t <= raw[1]);
-	assert.equal(bare.length, 2, "the premise of this test no longer holds");
-	const rounded = new Linear({ domain: raw, tickCount: 5, nice: true, tickMethod: wilkinsonExtended });
-	const [lo, hi] = rounded.getOptions().domain;
-	assert.equal(wilkinsonExtended(lo, hi, 5).filter((t) => t >= lo && t <= hi).length, 4);
+// Exercise our scale options after the plots adaptor, including G2's domain
+// inference: a missing zero option must fail on the range readers actually see.
+function chartYDomains(built) {
+	const spec = asEngineSees(built);
+	return marksOf(spec).filter((mark) => mark.scale?.y).map((mark) => {
+		const values = (mark.data ?? spec.data).map((row) => row[mark.encode.y]);
+		const inferred = inferScale("y", [values], {
+			type: "linear",
+			range: [1, 0],
+			...mark.scale.y,
+		}, [], {}, {});
+		return new Linear(inferred).getOptions().domain;
+	});
+}
+
+test("nonnegative chart axes start at zero for inline and dataset input", () => {
+	for (const [name, attrs] of CHART_SHAPES) {
+		const builds = [
+			buildChartFromInline({
+				attributes: { ...attrs, x: "period" },
+				csv: "period,Total,Split\nA,100,80\nB,110,90",
+			}),
+			buildChartFromTag({
+				manifest, rows,
+				attributes: { ...base, ...attrs, granularity: "month" },
+			}),
+		];
+		for (const built of builds) {
+			const domains = chartYDomains(built);
+			assert.ok(domains.length > 0, name);
+			for (const [min, max] of domains) {
+				assert.equal(min, 0, `${name}: truncated positive axis`);
+				assert.ok(max > 0, `${name}: empty positive range`);
+			}
+		}
+	}
+});
+
+test("negative-only chart axes retain zero at the top", () => {
+	for (const [name, attrs] of CHART_SHAPES) {
+		const built = buildChartFromInline({
+			attributes: { ...attrs, x: "period" },
+			csv: "period,Total,Split\nA,-100,-80\nB,-110,-90",
+		});
+		for (const [min, max] of chartYDomains(built)) {
+			assert.ok(min < 0, `${name}: negative values were clipped`);
+			assert.equal(max, 0, `${name}: zero baseline missing`);
+		}
+	}
+});
+
+test("single-axis combo shares a zero-inclusive range without clipping negatives", () => {
+	const built = buildChartFromInline({
+		attributes: { type: "combo", x: "period", bars: "a", lines: "b" },
+		csv: "period,a,b\nA,-80,100\nB,110,-200",
+	});
+	const domains = chartYDomains(built);
+	assert.ok(domains.length >= 2);
+	for (const domain of domains) {
+		assert.deepEqual(domain, domains[0]);
+		assert.ok(domain[0] <= -200);
+		assert.ok(domain[1] >= 110);
+	}
+});
+
+test("zero-only chart axes have a nonzero span starting at zero", () => {
+	for (const [name, attrs] of CHART_SHAPES) {
+		const built = buildChartFromInline({
+			attributes: { ...attrs, x: "period" },
+			csv: "period,Total,Split\nA,0,0\nB,0,0",
+		});
+		for (const domain of chartYDomains(built)) {
+			assert.deepEqual(domain, [0, 1], name);
+		}
+	}
 });
 
 test("every chart with bars carries a hover band shell the theme can paint", () => {
