@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chart, PlotInstance } from "./Chart";
 import { GranularityButtons } from "./GranularityButtons";
 import {
@@ -54,24 +54,37 @@ export const ChartFigure = ({
 	showExportBtn,
 	context,
 }: ChartFigureProps) => {
-	const [granularity, setGranularity] = useState(initial.granularity);
+	const [result, setResult] = useState<{ built: BuiltChart; error?: string }>(
+		() => ({ built: initial }),
+	);
+	const { built, error } = result;
+	const rebuild = useCallback((candidate = built.granularity): boolean => {
+		try {
+			const next = build(candidate);
+			setResult({ built: next });
+			return true;
+		} catch (e) {
+			const message = `Mosaic: ${String((e as Error)?.message ?? e)}`;
+			setResult((previous) => ({ ...previous, error: message }));
+			return false;
+		}
+	}, [build, built.granularity]);
 	// 就地重建的三个触发器，均不重渲染 markdown（与阅读视图虚拟化竞态会丢图）：
 	// 1) 主题切换事件（main.tsx 广播），用 build 闭包按当前主题重建配置；
 	// 2) 宿主宽度变化——打开文件时首渲可能发生在过渡宽度上，标签防碰撞会按
 	//    错误几何取舍并被缓存视图固化；安定后按真实宽度重建一次即恢复。
 	// 3) 从原文视图切回图表——见下方 toggleSource 的说明。
-	const [rebuildEpoch, setRebuildEpoch] = useState(0);
 	const [showSource, setShowSource] = useState(false);
 	const [sourceHeight, setSourceHeight] = useState<number | undefined>(undefined);
 	const figureRef = useRef<HTMLElement | null>(null);
 	const contentRef = useRef<HTMLDivElement | null>(null);
 	const plotRef = useRef<PlotInstance | null>(null);
 	useEffect(() => {
-		const onThemeChange = () => setRebuildEpoch((e) => e + 1);
+		const onThemeChange = () => { rebuild(); };
 		window.addEventListener("mosaic:theme-change", onThemeChange);
 		return () =>
 			window.removeEventListener("mosaic:theme-change", onThemeChange);
-	}, []);
+	}, [rebuild]);
 	useEffect(() => {
 		const el = figureRef.current;
 		if (!el) return;
@@ -95,7 +108,7 @@ export const ChartFigure = ({
 				const settled = el.clientWidth;
 				if (settled === 0) return;
 				lastWidth = settled;
-				setRebuildEpoch((e) => e + 1);
+				rebuild();
 			}, 150);
 		});
 		observer.observe(el);
@@ -103,34 +116,20 @@ export const ChartFigure = ({
 			window.clearTimeout(timer);
 			observer.disconnect();
 		};
-	}, []);
-	// 每次都重新 build，绝不把 initial 交回渲染器第二次：plots 在渲染时会就地
-	// 改写传入的配置（把 label 搬进 labels、删掉 label 键），而它的 transform
-	// 不是幂等的——同一个对象再渲染一遍，labels 会被清空且无从恢复，数值标签
-	// 就此永久消失。切到别的粒度再切回来正好走这条路。build 是纯计算，重跑
-	// 一次的代价远小于这个 bug。
-	const { built, error } = useMemo(() => {
-		try {
-			return { built: build(granularity), error: undefined as string | undefined };
-		} catch (e) {
-			// 降级路径：新粒度构建失败时保留上一次的图并附错误说明。这里的
-			// initial 同样可能已被渲染器消费过，但比整块图消失更可用。
-			return { built: initial, error: `Mosaic: ${String((e as Error)?.message ?? e)}` };
-		}
-	}, [granularity, rebuildEpoch]);
+	}, [rebuild]);
 
-	// 切到原文视图时 <Chart> 被卸载，切回来必须拿一份全新的配置——useMemo 的缓存值
-	// 是刚刚交给过 plots 的那一个，再渲染一遍数值标签会永久消失（同上）。所以切回
-	// 的那一下推进 rebuildEpoch，让 useMemo 重算。
+	// 切到原文视图时 <Chart> 被卸载，切回来必须先拿到一份全新的配置。plots 会就地
+	// 改写收到的配置；若重建失败，就留在原文视图并显示错误，不能把已消费的配置
+	// 再交给引擎一次。
 	const toggleSource = () => {
 		if (showSource) {
-			setRebuildEpoch((e) => e + 1);
-		} else {
-			// 框体高宽不变：切换前量一次当前内容高度，锁给原文视图。
-			const measured = contentRef.current?.offsetHeight;
-			setSourceHeight(measured && measured > 0 ? measured : undefined);
+			if (rebuild()) setShowSource(false);
+			return;
 		}
-		setShowSource(!showSource);
+		// 框体高宽不变：切换前量一次当前内容高度，锁给原文视图。
+		const measured = contentRef.current?.offsetHeight;
+		setSourceHeight(measured && measured > 0 ? measured : undefined);
+		setShowSource(true);
 	};
 
 	const status = error ? "error" : built.warning ? "notice" : "ok";
@@ -142,6 +141,25 @@ export const ChartFigure = ({
 			...extra,
 		});
 	const unit = unitLine(built);
+	const plot = useMemo(() => (
+		<Chart
+			type={built.chartType}
+			config={built.config}
+			onInstance={(instance) => { plotRef.current = instance; }}
+			renderError={(message) => (
+				<BlockErrorBox
+					message={message}
+					onCopy={() => copyToClipboard(formatBlockReport({
+						context,
+						granularity: built.granularity,
+						availableGranularities: built.availableGranularities,
+						status: "error",
+						error: message,
+					}))}
+				/>
+			)}
+		/>
+	), [built, context]);
 
 	return (
 		<figure className="mosaic-figure" ref={figureRef}>
@@ -164,8 +182,8 @@ export const ChartFigure = ({
 				<div className="mosaic-control-group">
 					<GranularityButtons
 						options={options}
-						active={granularity}
-						onSelect={setGranularity}
+						active={built.granularity}
+						onSelect={rebuild}
 					/>
 					<BlockToolbar
 						showingSource={showSource}
@@ -199,23 +217,7 @@ export const ChartFigure = ({
 				{showSource ? (
 					<SourceView raw={context.raw} height={sourceHeight} />
 				) : (
-					<Chart
-						type={built.chartType}
-						config={built.config}
-						onInstance={(instance) => {
-							plotRef.current = instance;
-						}}
-						// 引擎崩了也要带得走定位上下文：边界只有 message，文件/行号/原文
-						// 在这一层。
-						renderError={(message) => (
-							<BlockErrorBox
-								message={message}
-								onCopy={() =>
-									copyToClipboard(report({ status: "error", error: message }))
-								}
-							/>
-						)}
-					/>
+					plot
 				)}
 			</div>
 			{note && <p className="mosaic-figure-note">{note}</p>}

@@ -76,6 +76,7 @@ One contract shared by all three entries. In the tag forms, one attribute per li
 - `combo`: bars and lines share the same zero-inclusive range, including negative values when present. Legend order follows the order the attributes are written in (write `lines` before `bars` and the line series come first).
 - `combo-dual-axis`: independent left and right axes, with bars always on the left.
 - The granularity switcher appears whenever at least one candidate survives the intersection with what the data supports. A lone button says this data has exactly one view; hiding the control would read as the chart having no granularity at all.
+- If a granularity change fails, the last successful chart and its selected granularity remain visible. The block shows the reason, and the next successful rebuild clears the error.
 - Every Y axis includes zero, including line charts and both sides of a dual-axis chart. Nonnegative data starts at zero; negative-only data ends at zero; mixed-sign data extends on both sides. All-zero data uses a `0–1` range.
 - A positive Y-axis maximum gets 8% headroom (for stacked bars, computed on each period's positive stack total, without subtracting negative values), then bounds round outward to readable ticks. Manual Y-axis bounds are not supported.
 - Line nodes are solid dots. Value labels are thousands-grouped with at most two decimals, and collide gracefully — shown when they fit, hidden when they do not.

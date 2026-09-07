@@ -7,6 +7,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { parseDatasetManifest, parseDatasetData } from "../src/parse/dataset-loader.mjs";
+import { buildChartFromTag } from "../src/render/chart-tag-config.mjs";
 import {
 	document,
 	domDefaults,
@@ -397,6 +399,122 @@ test("switching back hands the engine a freshly built config, never the used one
 	// 1 → 2 说明真的重算了；若切回只是复用 useMemo 的缓存值，第二次仍是 1。
 	assert.equal(seen[1].config.seq, seen[0].config.seq + 1);
 	assert.notEqual(seen[0].config, seen[1].config);
+});
+
+test("failed chart granularity keeps the last accepted frame", async () => {
+	const manifest = parseDatasetManifest(JSON.stringify({
+		schemaVersion: 1, id: "weekly", data: "weekly.csv",
+		grain: ["date"], primaryKey: ["date"],
+		time: { field: "date", sourceGranularity: "week", weekStartsOn: "monday" },
+		fields: [
+			{ name: "date", type: "date", required: true },
+			{ name: "value", type: "number", rollup: "sum" },
+		],
+	}));
+	const rows = parseDatasetData(manifest, [
+		"date,value", "2026-03-30,10", "2026-04-06,20", "2026-04-13,30",
+		"2026-04-20,40", "2026-04-27,50", "2026-05-04,60",
+	].join("\n"));
+	let buildCalls = 0;
+	const build = (granularity) => {
+		buildCalls += 1;
+		return buildChartFromTag({
+			manifest, rows, granularity,
+			attributes: { type: "line", series: "value", granularityOptions: "week,month,quarter" },
+		});
+	};
+	const host = chartFigure({
+		initial: build("week"), build, options: ["week", "month", "quarter"],
+	});
+	const select = async (value) => {
+		queryAll(host, ".mosaic-granularity-btn").find((b) => b.textContent === value).click();
+		await flush();
+	};
+	const active = () => queryAll(host, ".mosaic-granularity-btn")
+		.find((b) => b.className.includes("mod-cta")).textContent;
+	try {
+		await flush();
+		assert.equal(buildCalls, 1, "first display must use the already built initial result");
+		assert.equal(renders.at(-1).config.data.length, 6);
+		await select("month");
+		assert.equal(buildCalls, 2);
+		const accepted = renders.at(-1).config;
+		const footnote = query(host, ".mosaic-figure-footnote").textContent;
+		const renderedCount = renders.length;
+		assert.deepEqual(accepted.data.map((row) => row.value), [150]);
+		await select("quarter");
+		assert.equal(buildCalls, 3, "the rejected query is attempted only once");
+		assert.equal(active(), "month");
+		assert.match(query(host, ".mosaic-error").textContent, /no complete quarter periods/);
+		assert.equal(query(host, ".mosaic-figure-footnote").textContent, footnote);
+		assert.equal(renders.length, renderedCount);
+		assert.equal(renders.at(-1).config, accepted);
+		toggle(host, "Copy block report");
+		assert.match(clipboard.text, /- granularity: month/);
+		assert.match(clipboard.text, /- status: error/);
+		toggle(host, "Show source");
+		await flush();
+		toggle(host, "Show rendered block");
+		await flush();
+		assert.equal(buildCalls, 4, "returning from source must build a fresh config");
+		assert.equal(active(), "month");
+		assert.equal(query(host, ".mosaic-error"), null);
+		assert.deepEqual(renders.at(-1).config.data.map((row) => row.value), [150]);
+		assert.notEqual(renders.at(-1).config.data, accepted.data);
+		await select("week");
+		assert.equal(buildCalls, 5);
+		assert.equal(active(), "week");
+		assert.equal(renders.at(-1).config.data.length, 6);
+	} finally {
+		unmountRoot(host);
+		host.remove();
+	}
+});
+
+test("a failed source return stays in source until a fresh chart is accepted", async () => {
+	let buildCalls = 0;
+	let rejectNext = false;
+	const makeBuilt = (seq) => ({
+		chartType: "Line",
+		config: { seq },
+		granularity: "week",
+		availableGranularities: ["week"],
+	});
+	const build = () => {
+		buildCalls += 1;
+		if (rejectNext) {
+			rejectNext = false;
+			throw new Error("fresh chart unavailable");
+		}
+		return makeBuilt(buildCalls);
+	};
+	const before = renders.length;
+	const host = chartFigure({
+		initial: makeBuilt(0), build, options: ["week"],
+	});
+	try {
+		await flush();
+		assert.equal(buildCalls, 0, "first display must not rebuild the accepted initial chart");
+		toggle(host, "Show source");
+		await flush();
+		rejectNext = true;
+		toggle(host, "Show rendered block");
+		await flush();
+		assert.equal(buildCalls, 1);
+		assert.notEqual(query(host, "pre.mosaic-source-view"), null);
+		assert.match(query(host, ".mosaic-error").textContent, /fresh chart unavailable/);
+		assert.equal(renders.length, before + 1, "a rejected source return must not render a plot");
+		toggle(host, "Show rendered block");
+		await flush();
+		assert.equal(buildCalls, 2);
+		assert.equal(query(host, "pre.mosaic-source-view"), null);
+		assert.equal(query(host, ".mosaic-error"), null);
+		assert.equal(renders.length, before + 2);
+		assert.equal(renders.at(-1).config.seq, 2);
+	} finally {
+		unmountRoot(host);
+		host.remove();
+	}
 });
 
 test("a non-Chart block toggles to source and back inside the same shell", async () => {
