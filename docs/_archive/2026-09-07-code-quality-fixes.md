@@ -1,5 +1,10 @@
 # Code Quality Fixes Implementation Plan
 
+> **Status:** Implementation and verification completed on 2026-09-07; archived after a clean whole-branch review.
+> **Implementation landing point:** `codex/code-quality-fixes`, final functional commit `bb6fbaae3ea3d799edcfa38366d1bf42dd9611ac`; whole-branch review covered `0b2c1359fd7fd11ec46cc171b02f0b21a3bbfc6b..34925899aa238dbb303e7ca8a206cc7517579b9b`.
+> **Superseded approach:** Direct assignment of the DOM-building tooltip callback was replaced by a minimal forwarding callback after real-hover evidence exposed the locked plots adapter's React-detection heuristic.
+> **Delivery boundary:** The branch is committed and pushed, not merged or released. Cross-platform and Node 22/24 CI execution remain unverified. The checked steps below are historical execution records, not instructions to repeat the implementation.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -929,11 +934,11 @@ git push -u origin HEAD
 
 ### Step 5: Review and delivery gate
 
-- [ ] Run the `review` skill (`/gstack-review`) against the implementation diff. Fix accepted in-scope findings and rerun the affected tests plus full build before proceeding.
+- [x] Run the `review` skill (`/gstack-review`) against the implementation diff. Fix accepted in-scope findings and rerun the affected tests plus full build before proceeding.
 - [x] Apply the small-plugin filter to review findings: identify an actual reader/maintainer, a reachable failure, and a repair whose ongoing cost is justified. Do not expand this plan into speculative infrastructure work.
 - [ ] **Not authorized in this execution:** Once shipping is separately approved, use the `ship` skill (`/gstack-ship`) for PR creation. Tested implementation commits and pushes are authorized; PR creation, merge, tag, and release publication are not.
-- [ ] Report the branch, verified commit, five repair outcomes, automated test/build results, host version and checks, and every unverified platform or behavior.
-- [ ] Apply the repository's completed-plan archival policy only after implementation and verification finish. Do not mark this plan complete merely because the document has been written.
+- [x] Report the branch, verified commit, five repair outcomes, automated test/build results, host version and checks, and every unverified platform or behavior.
+- [x] Apply the repository's completed-plan archival policy only after implementation and verification finish. Do not mark this plan complete merely because the document has been written.
 
 ---
 
@@ -1040,7 +1045,7 @@ Code block / paired tag / external dataset
 - **CSV width:** Silent truncation produces a plausible but incorrect plot, while overly strict width equality rejects accepted empty cells. Task 5 asserts both the local error and retained valid behavior.
 - **Performance conclusion:** Only Task 2 removes confirmed duplicate work: two initial builder calls became one, and rejected selections produced no additional plot-adapter render in the regression harness. No elapsed-time or memory improvement has been measured.
 - **Other repairs:** Tooltip DOM creation, scalar conversion, quote tracking, and excess-cell validation are correctness/safety work. They do not justify speedup claims or new caches.
-- **Failure coverage status:** No known critical failure path is left without a verification requirement. All five regression groups and all 100 final host-check records passed. Whole-branch review remains pending; cross-platform and Node 22/24 CI execution are not claimed.
+- **Failure coverage status:** All five regression groups and all 100 final host-check records passed. Whole-branch review found no unresolved issue; cross-platform and Node 22/24 CI execution are not claimed.
 
 ---
 
@@ -1062,7 +1067,7 @@ Code block / paired tag / external dataset
 ## Execution Results
 
 > Implementation was authorized on 2026-09-07: create a branch, commit the plan, and execute with subagents.
-> The five repairs and integration verification are complete; whole-branch review is still in progress.
+> The five repairs, integration verification, and whole-branch review are complete.
 
 ### Commits and scope
 
@@ -1075,6 +1080,7 @@ Code block / paired tag / external dataset
 - Excess CSV cells and final functional build: `bb6fbaae3ea3d799edcfa38366d1bf42dd9611ac`.
 - Existing Chinese guide examples aligned to English: `269b52945a658a143f5bb995fc679cc87429873a`. All 14 fenced examples in the touched Chart/DataTable guide pairs are byte-identical; prose retains its language.
 - Every task passed its independent spec/quality review. The tooltip adapter correction passed a scoped re-review. No task-review finding remains open.
+- Whole-branch review of `34925899aa238dbb303e7ca8a206cc7517579b9b` passed the controller's `review` workflow and a fresh independent reviewer. No Critical, Important, or Minor finding remained; no further implementation fix was required. The final archive/status-only edit was inspected by the controller and does not change the verified functional build.
 - No dependency, lockfile, version, upstream baseline, CI configuration, or frozen `src/parse/blocks/` file changed. No PR, merge, tag, or release was created.
 
 ### Automated and reproducible-build evidence
@@ -1085,7 +1091,7 @@ Code block / paired tag / external dataset
 - A clean export of the final functional commit passed `npm ci`, all 352 tests, and production build. Installation audited 132 packages with zero reported vulnerabilities.
 - Non-blocking installation warning: npm 11 reported the existing `esbuild@0.28.2` postinstall script as not yet covered by `allowScripts`. Installation and build succeeded; no approval/configuration or dependency change was made.
 - Bundle size: **1,655,004 bytes**, below **1,843,200 bytes**. No generated asset was committed.
-- Clean and working builds produced identical SHA-256 values for all three release assets:
+- Clean, working, and actually installed host builds produced identical SHA-256 values for all three release assets:
 
 | Asset | SHA-256 |
 | --- | --- |
@@ -1107,7 +1113,7 @@ Code block / paired tag / external dataset
 - **Superseded during execution:** assigning the DOM-building tooltip helper directly to the plots callback. Real hover found an empty tooltip because the locked adapter treated DOM construction as React output. A minimal forwarding callback preserves the native-element contract; the installed detector regression and all real hovers now pass.
 - Only Task 2 has measured work-count reduction: initial builder calls **2 → 1**, with **0 extra plot renders** for a rejected selection. No elapsed-time, memory, or broad performance claim is made for these correctness repairs.
 - Windows, macOS, mobile Obsidian, and execution on the Node 22/24 CI matrix remain unverified. Source-return builder failure is covered by the component regression, not forced in the real host.
-- Whole-branch review is pending. Shipping requires a separate instruction; no PR or release readiness claim follows from passing local gates alone.
+- Whole-branch review is clear. Shipping requires a separate instruction; the technical review does not authorize a PR, merge, tag, or release.
 
 ---
 
@@ -1121,7 +1127,7 @@ Code block / paired tag / external dataset
 | Engineering plan | `plan-eng-review` | 1 | CLEAR (PLAN) | Five defects confirmed and five repair decisions accepted, with the incomplete quote repair corrected |
 | Baseline code audit | `review` | 1 | HISTORICAL FINDINGS REPAIRED | One P1 and four P2 defects repaired with regression and host evidence |
 | Implementation task reviews | Independent task reviewers | 6 | CLEAR (TASKS) | Five tasks plus one scoped tooltip-adapter re-review; no open findings |
-| Whole-branch code review | `review` and final independent reviewer | In progress | PENDING | Final assessment has not yet completed |
+| Whole-branch code review | `review` and final independent reviewer | 1 | CLEAR (CODE) | No Critical, Important, or Minor findings; reviewed through `34925899aa238dbb303e7ca8a206cc7517579b9b` |
 | Independent plan review | Optional outside voice | 0 | Not run | No independent-review claim |
 | Design review | `plan-design-review` | 0 | Not run | Existing appearance is preserved, with real-host checks required |
 | Product/DX review | Optional plan reviews | 0 | Not run | No new product or developer workflow introduced |
@@ -1136,7 +1142,7 @@ Code block / paired tag / external dataset
 - **Decision summary:** All five repair contracts were explicitly accepted by the user. The decisions concern repair behavior, not competing coverage levels, so no completeness score is assigned.
 - **Fresh baseline validation:** `npm test` passed 340/340 and `npm run build` passed on Node `26.8.1`, npm `11.19.0`. The unchanged bundle is `1,653,514` bytes, below the `1,843,200`-byte limit. The plan's 21 JavaScript/TypeScript/TSX snippets passed syntax checks with interface/JSX fragments placed in their intended enclosing syntax.
 - **Verification boundary:** The preceding baseline measurements are historical. Execution Results records the repaired 352-test suite, production build, clean-build equivalence, and actual host checks separately. Node 22/24 CI and macOS/Windows/mobile behavior remain unverified.
-- **Delivery state:** The plan and all five tested repairs are committed and pushed on the named branch. Integration documentation is being finalized; whole-branch review remains pending. Dependencies, versions, upstream baseline, and releases are unchanged.
-- **VERDICT:** Five approved repairs implemented, task-reviewed, and verified in the recorded local environment. Final whole-branch review and separately authorized shipping remain pending.
+- **Delivery state:** The plan and all five tested repairs are committed and pushed on the named branch. Integration and whole-branch review are complete; this plan is archived at `docs/_archive/2026-09-07-code-quality-fixes.md`. Dependencies, versions, upstream baseline, and releases are unchanged.
+- **VERDICT:** Five approved repairs implemented, task-reviewed, host-verified, and cleared by whole-branch review in the recorded local environment. No unresolved implementation finding. Shipping remains outside this execution's authority.
 
 NO UNRESOLVED DECISIONS
