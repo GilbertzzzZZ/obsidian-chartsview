@@ -79,6 +79,7 @@ One contract shared by all three entries. In the tag forms, one attribute per li
 - Every Y axis includes zero, including line charts and both sides of a dual-axis chart. Nonnegative data starts at zero; negative-only data ends at zero; mixed-sign data extends on both sides. All-zero data uses a `0–1` range.
 - A positive Y-axis maximum gets 8% headroom (for stacked bars, computed on each period's positive stack total, without subtracting negative values), then bounds round outward to readable ticks. Manual Y-axis bounds are not supported.
 - Line nodes are solid dots. Value labels are thousands-grouped with at most two decimals, and collide gracefully — shown when they fit, hidden when they do not.
+- Tooltip titles, series names, and values are displayed as plain text. HTML markup in data or labels is not rendered.
 - Legend markers are rounded squares for column series and a rounded bar for line series. Charts follow Obsidian's light and dark themes and reskin in place the moment the theme changes; the figure carries a faint themed border.
 
 **Provenance footnote** (external-dataset mode only). Generated under every chart: `dataset title · from → to · granularity · N/M source rows · data through <date>`. A warning line is appended when the range contains incomplete or missing periods.

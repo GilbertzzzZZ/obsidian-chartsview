@@ -1,10 +1,57 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as Plots from "@ant-design/plots";
 import { PlotErrorBoundary } from "./PlotErrorBoundary";
 
 export interface ConfigProps {
 	onReady?: (instance: unknown) => void;
+	interaction?: Record<string, unknown> & {
+		tooltip?: Record<string, unknown>;
+	};
 	[key: string]: unknown;
+}
+
+interface TooltipContent {
+	title?: unknown;
+	items: { name?: unknown; value?: unknown; color?: string }[];
+}
+
+function renderTooltipContent(
+	_event: unknown,
+	{ title, items }: TooltipContent,
+): HTMLElement {
+	const root = document.createElement("div");
+	if (title !== undefined && title !== null && title !== "") {
+		const heading = document.createElement("div");
+		heading.className = "g2-tooltip-title";
+		heading.textContent = String(title);
+		root.appendChild(heading);
+	}
+	const list = document.createElement("ul");
+	list.className = "g2-tooltip-list";
+	for (const item of items) {
+		const row = document.createElement("li");
+		row.className = "g2-tooltip-list-item";
+		const name = document.createElement("span");
+		name.className = "g2-tooltip-list-item-name";
+		const marker = document.createElement("span");
+		marker.className = "g2-tooltip-list-item-marker";
+		marker.style.backgroundColor = item.color ?? "black";
+		const label = document.createElement("span");
+		label.className = "g2-tooltip-list-item-name-label";
+		label.textContent = String(item.name ?? "");
+		label.title = label.textContent;
+		const value = document.createElement("span");
+		value.className = "g2-tooltip-list-item-value";
+		value.textContent = String(item.value ?? "");
+		value.title = value.textContent;
+		name.appendChild(marker);
+		name.appendChild(label);
+		row.appendChild(name);
+		row.appendChild(value);
+		list.appendChild(row);
+	}
+	root.appendChild(list);
+	return root;
 }
 
 export interface ChartProps {
@@ -37,6 +84,19 @@ export const Chart = ({ type, config, onInstance, renderError }: ChartProps) => 
 	const PlotComponent = PLOT_COMPONENTS[type];
 	const sizeGuardRef = useRef<ResizeObserver | null>(null);
 	const { onReady } = config ?? {};
+	const plotConfig = useMemo(
+		() => ({
+			...config,
+			interaction: {
+				...config.interaction,
+				tooltip: {
+					...config.interaction?.tooltip,
+					render: renderTooltipContent,
+				},
+			},
+		}),
+		[config],
+	);
 
 	// 尺寸不变量：画布尺寸必须等于容器尺寸。
 	// G2 的 sizeOf() 在 autoFit 下量容器，量到 0 就退回 640×480 默认画布；一个被
@@ -76,7 +136,7 @@ export const Chart = ({ type, config, onInstance, renderError }: ChartProps) => 
 	return (
 		<PlotErrorBoundary fallback={renderError}>
 			<PlotComponent
-				{...config}
+				{...plotConfig}
 				onReady={(instance: unknown) => {
 					onReady?.(instance);
 					attachSizeGuard(instance as PlotInstance);

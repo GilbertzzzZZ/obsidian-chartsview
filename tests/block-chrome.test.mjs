@@ -30,6 +30,7 @@ const {
 	renderComponentInto,
 	renderInto,
 	renders,
+	unmountRoot,
 } = await loadComponents();
 
 const CONTEXT = {
@@ -996,4 +997,48 @@ test("without a section info the code block rebuilds the fence and says it did",
 		clipboard.text.includes("### Source\n```chartview\n---\ntype: line\n---\n```"),
 		true,
 	);
+});
+
+test("chart tooltip renders every text field without HTML", async () => {
+	const probe = '<img src=data:image/png;base64,invalid onerror=window.__mosaicTooltipProbe=1>';
+	for (const chartType of ["Line", "Column", "DualAxes"]) {
+		const interaction = {
+			tooltip: { shared: true, crosshairs: false, css: { ".g2-tooltip": { color: "red" } } },
+			elementHighlight: { background: true },
+		};
+		const host = chartFigure({ builtExtra: { chartType, config: { interaction } } });
+		try {
+			await flush();
+			const applied = renders.at(-1).config.interaction;
+			assert.equal(typeof applied.tooltip.render, "function");
+			const { render, ...options } = applied.tooltip;
+			assert.deepEqual(options, interaction.tooltip);
+			assert.deepEqual(applied.elementHighlight, interaction.elementHighlight);
+			const root = render({}, {
+				title: probe,
+				items: [{ name: probe, value: probe, color: "#123456" }],
+			});
+			assert.equal(root.nodeType, 1);
+			assert.equal(query(root, ".g2-tooltip-title").textContent, probe);
+			assert.equal(query(root, ".g2-tooltip-list-item-name-label").textContent, probe);
+			assert.equal(query(root, ".g2-tooltip-list-item-value").textContent, probe);
+			assert.equal(queryAll(root, "img").length, 0);
+			assert.equal(query(root, ".g2-tooltip-list-item-marker").style.backgroundColor, "#123456");
+			const values = [0, -2, "12%", "$1,234.50", "A < B & C"];
+			const formatted = render({}, {
+				title: 0,
+				items: values.map((value) => ({ name: "Value", value })),
+			});
+			assert.equal(query(formatted, ".g2-tooltip-title").textContent, "0");
+			assert.deepEqual(
+				queryAll(formatted, ".g2-tooltip-list-item-value").map((cell) => cell.textContent),
+				values.map(String),
+			);
+			assert.equal(render({}, { title: "", items: [] }).nodeType, 1);
+			assert.equal("render" in interaction.tooltip, false);
+		} finally {
+			unmountRoot(host);
+			host.remove();
+		}
+	}
 });
