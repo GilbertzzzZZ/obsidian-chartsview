@@ -156,6 +156,7 @@ The initial inspection compared `45f61a94873d81eaa9bd18aa97d31239f300080d` with 
 
 - Chart remains responsive through AntV and Mosaic's width listener instead of inheriting OpenGlance's static SVG minimum width.
 - Mosaic retains AntV tick rounding and its positive-maximum headroom calculation; zero-baseline agreement does not imply identical tick positions or padding for mixed-sign data.
+- AntV stacks positive and negative bar values separately. Compute headroom from positive stack totals and retain the negative extent; a per-period net total is not a visible stack boundary. Regression tests must include the actual stacking transform before scale inference.
 - Colors continue to use Obsidian theme variables; typed FlowDiagram nodes retain Mosaic's theme-safe color mixing.
 - Mosaic retains the shared outer frame, normal-flow toolbar, source view, warning treatment, and host lifecycle behavior documented in its design guides.
 - FlowDiagram canvas sizing is scoped to `.mosaic-flow-scroll > svg`; the shared toolbar's native SVG icons must not inherit the canvas minimum width.
@@ -266,3 +267,11 @@ git -C "$OPENGLANCE_REPO" diff --name-status "$BASE_COMMIT" "$TARGET_COMMIT" -- 
 - Actual Obsidian `1.13.7` on Linux passed 40 scenarios in the isolated synthetic-data vault: 10 Chart fixtures in both themes at 1200 px, six nonnegative chart types in both themes at 420 px, and additional line/dual-axis `.mdx` checks at both widths and themes. Each scenario exercised all four inline/external code-block/tag forms; all 10 fixture pairs were byte-identical.
 - Rendered scales included zero with visible zero ticks, preserved negative values, agreed across entry forms, and produced no chart errors or page overflow. Quarter aggregation and source/rendered round trips retained the expected dual-axis domains.
 - Limits remain Linux/default-theme coverage only. Manual bounds and configurable dual-axis series assignment are not implemented by this correction.
+
+### Signed-stack review correction · 2026-09-07
+
+- Pre-landing review found that mixed-sign stacked bars were absent from the zero-baseline host matrix. Net totals at or below zero incorrectly forced an upper bound of `0` or `1`, clipping positive stacks. Positive net totals also understated the positive extent.
+- Stack extents now accumulate positive and negative values separately. The adopted upstream baseline and other chart types are unchanged.
+- All four new regression tests failed before the fix and passed afterward. All 340 tests, TypeScript checking, and the production build passed. The scale test helper executes the real stacking transform before domain inference.
+- Actual Obsidian `1.13.7` on Linux passed 32 scenarios: six stacked-bar fixtures at both 1200 / 420 px widths in both default themes, plus `.mdx` checks for negative-net and cumulative-stack fixtures. Every scenario exercised all four inline/external code-block/tag forms without clipped stack extents, chart errors, or page overflow. All six `.md` / `.mdx` pairs were byte-identical.
+- Quarter aggregation preserved both cumulative extents, and source/rendered round trips restored the same domains. Independent follow-up review found the reported regression resolved. Platform and custom-theme limits above still apply.

@@ -1089,19 +1089,23 @@ function buildChartFromRows({ rows, attrs, attributes, xKey, common: baseCommon 
 		(d) => type === "line" || d.value !== null,
 	);
 	const formatter = valueFormatterFor(unit);
-	// stacked-bar 的视觉上限是每期堆叠和，其余按单值最大。
+	// G2 分别堆叠正负值，不能用相抵后的净和作为上界。
+	// 同时保留负值端点，headroomMax 才能区分全负与全零数据。
 	const yMax =
 		type === "stacked-bar"
 			? headroomMax(
 					[
 						...data
 							.reduce((m, d) => {
-								if (Number.isFinite(d.value))
-									m.set(d.period, (m.get(d.period) ?? 0) + d.value);
+								if (Number.isFinite(d.value)) {
+									const totals = m.get(d.period) ?? [0, 0];
+									totals[d.value < 0 ? 0 : 1] += d.value;
+									m.set(d.period, totals);
+								}
 								return m;
 							}, new Map())
 							.values(),
-					],
+					].flat(),
 				)
 			: headroomMax(data.map((d) => d.value));
 	const highlightX = highlightAxisX(highlight);
