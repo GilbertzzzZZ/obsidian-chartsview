@@ -7,6 +7,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { parseDatasetManifest, parseDatasetData } from "../src/parse/dataset-loader.mjs";
 import { buildChartFromTag } from "../src/render/chart-tag-config.mjs";
 import {
@@ -22,6 +23,8 @@ import {
 
 // 全局必须先装好：打包产物里 preact 一被求值就会去摸 document。
 const clipboard = installGlobals();
+const nodeRequire = createRequire(import.meta.url);
+const { isValidElement } = nodeRequire("@ant-design/plots/lib/util/is-valid-element.js");
 const { loadComponents } = await import("./helpers/bundle.mjs");
 const {
 	React,
@@ -1130,6 +1133,11 @@ test("chart tooltip renders every text field without HTML", async () => {
 			const applied = renders.at(-1).config.interaction;
 			assert.equal(typeof applied.tooltip.render, "function");
 			const { render, ...options } = applied.tooltip;
+			assert.equal(
+				isValidElement(String(render)),
+				false,
+				"plots must not reinterpret the HTMLElement callback as React content",
+			);
 			assert.deepEqual(options, interaction.tooltip);
 			assert.deepEqual(applied.elementHighlight, interaction.elementHighlight);
 			const root = render({}, {

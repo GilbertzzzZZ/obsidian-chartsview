@@ -15,10 +15,7 @@ interface TooltipContent {
 	items: { name?: unknown; value?: unknown; color?: string }[];
 }
 
-function renderTooltipContent(
-	_event: unknown,
-	{ title, items }: TooltipContent,
-): HTMLElement {
+function buildTooltipContent({ title, items }: TooltipContent): HTMLElement {
 	const root = document.createElement("div");
 	if (title !== undefined && title !== null && title !== "") {
 		const heading = document.createElement("div");
@@ -52,6 +49,10 @@ function renderTooltipContent(
 	}
 	root.appendChild(list);
 	return root;
+}
+
+function renderTooltipContent(_event: unknown, content: TooltipContent): HTMLElement {
+	return buildTooltipContent(content);
 }
 
 export interface ChartProps {
