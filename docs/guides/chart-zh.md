@@ -43,6 +43,7 @@
 - 不支持 `dataset` / `from` / `to` / `granularity` / `granularityOptions`——这些属于外部数据集语义。
 - `x` 缺省取 CSV 首列；显式声明的列必须存在于 CSV 表头。
 - 数值列必须是数字或留空，留空表示断点；不合法时报错并给出行号。
+- 数据行不得在表头宽度之外包含非空单元格。文本字段中带引号的逗号仍然有效，表头宽度之外的空尾字段也仍然允许。
 - 无溯源脚注、无粒度切换按钮。
 
 ---
@@ -187,6 +188,10 @@ series="不存在的列"
 
 数值列写了非数字（如 2025-01,abc）
 → Mosaic: Inline CSV row 2: "指标A" value "abc" is not a number.
+
+未加引号的千分位分隔符会多出一个单元格（`period,value` 后接 `April,1,234`）
+→ Mosaic: Inline CSV row 2 contains more values than headers.
+数值应写成 `April,1234`。文本字段中带引号的逗号仍然有效（`"April, revised",1234`），空尾字段也仍然有效（`April,1234,,`）。
 
 开标签写了 dataset="..." 同时标签体又带 CSV
 → Mosaic: Provide either dataset= or an inline CSV body, not both.

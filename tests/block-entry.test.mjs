@@ -319,3 +319,17 @@ test("single quoted paired table title matches double quoted rendering", async (
 		assert.equal(shape(single), shape(double));
 	}
 });
+
+test("extra chart CSV cells produce local errors in both entry forms", async () => {
+	const csv = "period,value\nApril,1,234";
+	const block = await renderCodeBlock("chart", `---\ntype: line\nseries: value\n---\n${csv}`);
+	const tag = await renderTag(`<Chart type="line" series="value">\n\`\`\`csv\n${csv}\n\`\`\`\n</Chart>`);
+	for (const host of [block, tag]) {
+		assert.match(query(host, ".mosaic-error").textContent,
+			/Mosaic: Inline CSV row 2 contains more values than headers\./);
+		assert.equal(queryAll(host, "[data-plot]").length, 0);
+	}
+	const valid = await renderCodeBlock("chart", "---\ntype: line\nseries: value\n---\nperiod,value\nApril,1234");
+	assert.equal(query(valid, ".mosaic-error"), null);
+	assert.equal(queryAll(valid, "[data-plot]").length, 1);
+});

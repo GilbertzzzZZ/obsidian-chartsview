@@ -43,6 +43,7 @@
 - No `dataset` / `from` / `to` / `granularity` / `granularityOptions` — those belong to external-dataset semantics.
 - `x` defaults to the first CSV column; any column named explicitly must exist in the CSV header.
 - Numeric columns must be a number or empty; empty means a break in the line. Anything else errors and names the row number.
+- A row may not contain non-empty cells beyond the header width. Quoted commas in text fields remain valid, and empty trailing fields beyond the header width are allowed.
 - No provenance footnote, no granularity switcher.
 
 ---
@@ -187,6 +188,10 @@ series="NoSuchColumn"
 
 A non-number in a numeric column (for example 2025-01,abc)
 → Mosaic: Inline CSV row 2: "Metric A" value "abc" is not a number.
+
+An unquoted thousands separator adds an extra cell (`period,value` followed by `April,1,234`)
+→ Mosaic: Inline CSV row 2 contains more values than headers.
+Write the numeric value as `April,1234`. A quoted comma in a text field remains valid (`"April, revised",1234`), as do empty trailing fields (`April,1234,,`).
 
 dataset="..." on the opening tag while the body also carries CSV
 → Mosaic: Provide either dataset= or an inline CSV body, not both.

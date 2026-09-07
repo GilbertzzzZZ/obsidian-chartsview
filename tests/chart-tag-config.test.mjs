@@ -2373,3 +2373,31 @@ test("inline: rejects csv without a data row", () => {
 test("inline: rejects duplicate header columns", () => {
 	assert.throws(() => buildChartFromInline({ attributes: {}, csv: "m,a,a\n1,2,3" }), /duplicate/i);
 });
+
+test("inline chart rejects non-empty cells beyond header width", () => {
+	for (const csv of [
+		"period,value\nApril,1,234",
+		"period,value\nApril,1,,extra",
+	]) {
+		assert.throws(() => buildChartFromInline({
+			attributes: { type: "line", series: "value" }, csv,
+		}), /Inline CSV row 2 contains more values than headers\./);
+	}
+	assert.throws(() => buildChartFromInline({
+		attributes: { type: "line", series: "value" },
+		csv: "period,value\nApril,1\nMay,2,extra",
+	}), /Inline CSV row 3 contains more values than headers\./);
+});
+
+test("inline chart keeps valid quoting and empty-cell behavior", () => {
+	const build = (csv) => buildChartFromInline({
+		attributes: { type: "line", series: "value" }, csv,
+	});
+	assert.deepEqual(build("period,value\nApril,1,, ").config.data.map((d) => d.value), [1]);
+	const quoted = build('period,value\n"April, revised",1').config.data[0];
+	assert.equal(quoted.period, "April, revised");
+	assert.equal(quoted.value, 1);
+	assert.deepEqual(build("period,value\nApril\nMay,0\nJune,").config.data.map((d) => d.value),
+		[null, 0, null]);
+	assert.throws(() => build('period,value\nApril,"1,234"'), /is not a number/);
+});

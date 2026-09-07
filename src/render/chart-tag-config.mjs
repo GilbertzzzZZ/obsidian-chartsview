@@ -1241,6 +1241,9 @@ export function buildChartFromInline({ attributes = {}, csv }) {
 		}
 	}
 	const rows = dataRecords.map((record, index) => {
+		if (record.slice(columns.length).some((value) => String(value).trim() !== "")) {
+			throw new Error(`Inline CSV row ${index + 2} contains more values than headers.`);
+		}
 		const row = {};
 		columns.forEach((name, i) => {
 			const cell = String(record[i] ?? "").trim();
