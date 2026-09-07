@@ -309,3 +309,13 @@ test("the chartview alias rebuilds its own fence, not the canonical one", async 
 	assert.equal(clipboard.text.includes("### Source\n```chartview\n"), true);
 	assert.equal(clipboard.text.includes("```chart\n"), false);
 });
+
+test("single quoted paired table title matches double quoted rendering", async () => {
+	for (const title of ["A > B", "A < B"]) {
+		const single = await renderTag(`<DataTable title='${title}'>\nname,value\nAlpha,1\n</DataTable>`);
+		const double = await renderTag(`<DataTable title="${title}">\nname,value\nAlpha,1\n</DataTable>`);
+		assert.equal(queryAll(single, "table").length, 1);
+		assert.equal(query(single, ".mosaic-block-title").textContent, title);
+		assert.equal(shape(single), shape(double));
+	}
+});

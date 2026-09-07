@@ -542,3 +542,47 @@ test("Task 13: no symbol side channel survives anywhere in the parser", () => {
 	);
 	assert.deepEqual(Object.getOwnPropertySymbols(tag.attributes), []);
 });
+
+test("paired tags preserve both quote styles and quoted delimiters", () => {
+	for (const name of COMPONENT_NAMES) {
+		for (const [attribute, title] of [
+			["title='A > B'", "A > B"],
+			['title="A > B"', "A > B"],
+			['title=\'A "quoted" < B\'', 'A "quoted" < B'],
+			['title="A \'quoted\' < B"', "A 'quoted' < B"],
+			['title=\'A " > B\'', 'A " > B'],
+		]) {
+			const source = `<${name} ${attribute}>\nvalue\n</${name}>`;
+			const tags = findComponentTags(source);
+			assert.equal(tags.length, 1, source);
+			assert.equal(tags[0].attributes.title, title);
+			assert.equal(tags[0].end, source.length);
+		}
+	}
+	const chart = "<Chart title='A > B'>\n```csv\nperiod,value\nApril,1\n```\n</Chart>";
+	assert.equal(findChartTags(chart)[0].csv, "period,value\nApril,1");
+});
+
+test("paired quote tracking still rejects malformed boundaries", () => {
+	for (const source of [
+		"<DataTable title='unfinished>\nvalue\n</DataTable>",
+		'<DataTable title="unfinished>\nvalue\n</DataTable>',
+		"<DataTable < title='A'>\nvalue\n</DataTable>",
+		"<DataTable title='A > B'>\nvalue",
+	]) assert.deepEqual(findComponentTags(source), []);
+});
+
+test("paired quote repair preserves self-closing boundaries", () => {
+	for (const attribute of ["title='A > B'", 'title="A > B"']) {
+		const tags = findComponentTags(`<DataTable ${attribute} />`);
+		assert.equal(tags.length, 1);
+		assert.equal(tags[0].attributes.title, "A > B");
+		assert.equal(tags[0].body, null);
+	}
+	for (const source of [
+		"<DataTable title='A < B' />",
+		'<DataTable title="A < B" />',
+		"<DataTable title='A /> B' />",
+		'<DataTable title="A /> B" />',
+	]) assert.deepEqual(findComponentTags(source), []);
+});

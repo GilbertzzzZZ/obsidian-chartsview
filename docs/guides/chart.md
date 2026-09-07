@@ -134,8 +134,8 @@ Red error box, root cause surfaced in place:
 
 Renders as source (not taken over, not an error box):
 
-- A literal `/>` inside an attribute value truncates the tag early — a safe refusal.
-- An attribute value containing `>` must be double-quoted; a `>` inside single quotes is not recognised (the tag ends early at the `>`) and the whole tag falls back to source.
+- A literal `<` inside an attribute value makes a self-closing tag ambiguous, so the tag is safely refused.
+- A literal `/>` inside an attribute value truncates the self-closing tag early — also a safe refusal.
 - The paragraph contains something besides the tag (the general case — see [tag-syntax.md](tag-syntax.md#when-the-source-renders-as-is)).
 
 ### It still renders, with a notice
@@ -170,6 +170,7 @@ month,Metric A,Metric B
 ````
 
 - Writing boundaries — single-line opening tag, no blank lines in the body, and so on — are in [tag-syntax.md](tag-syntax.md). (Self-closing tags are exempt from the body rules, having no fence in the body.) When there are too many attributes to fit on one line, switch to the code-block form, whose frontmatter is one attribute per line by nature.
+- Single- and double-quoted attribute values both preserve literal `<` and `>` in a paired tag. Each value closes only when its matching quote character appears.
 - Between the opening and closing tag there must be nothing but optional whitespace, a CSV fence and optional whitespace. Chart's tag body accepts a CSV fence only and does not use the common row-extraction paths of the other five tag blocks.
 - The general inline-mode boundary is at the [top of this page](#the-three-forms-at-a-glance).
 

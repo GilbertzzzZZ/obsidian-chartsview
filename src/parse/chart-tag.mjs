@@ -74,18 +74,25 @@ function matchSelfClosing(source, start, name) {
 	};
 }
 
-// 成对：<Name ...> + body + </Name>。开标签的 ">" 用引号感知扫描定位，
-// 属性值里允许出现 ">"。body 原文（开标签 ">" 之后到 "</Name>" 之前）不做校验，
-// 交给消费方（如 findChartTags 的 PAIRED_BODY 校验）处理。
+// 成对：<Name ...> + body + </Name>。开标签的 ">" 用引号感知扫描定位：单、双引号
+// 分别只由同一种引号闭合，属性值里允许出现 "<" / ">"。未被引号包裹的 "<" 仍是
+// 嵌套/畸形边界。body 原文（开标签 ">" 之后到 "</Name>" 之前）不做校验，交给消费方
+// （如 findChartTags 的 PAIRED_BODY 校验）处理。
 function matchPaired(source, start, name) {
 	const tagLen = 1 + name.length;
 	let i = start + tagLen;
-	let quoted = false;
+	let quote = null;
 	for (; i < source.length; i += 1) {
 		const ch = source[i];
-		if (ch === '"') quoted = !quoted;
-		else if (!quoted && ch === ">") break;
-		else if (!quoted && ch === "<") return null; // 嵌套/畸形
+		if (quote !== null) {
+			if (ch === quote) quote = null;
+		} else if (ch === '"' || ch === "'") {
+			quote = ch;
+		} else if (ch === ">") {
+			break;
+		} else if (ch === "<") {
+			return null;
+		}
 	}
 	if (i >= source.length) return null;
 	const inner = source.slice(start + tagLen, i);
@@ -142,14 +149,16 @@ export function scanAttrs(inner) {
 // 根因是这条判据对「合法但一半字段不认识」的标签天生不适用：中文字段名在字符数上
 // 与 ASCII 属性同量级，四条不认识就足以压过五条认识的。取 2 倍留出一档余量——真正
 // 要挡的是「大段散文里混着一个属性」（散文长度是属性文本的几十倍），2 倍与几十倍
-// 之间有的是空隙。挡开标签越界那件事另有更准的两条：inner 含 "<"、未归属文本含 ">"。
+// 之间有的是空隙。自闭合标签越界另有更准的两条：inner 含 "<"、未归属文本含 ">"；
+// 成对标签由 matchPaired 的引号感知扫描守边界。
 const STRAY_BUDGET = 2;
 
 // 尽力解析：inner 里认不出的片段不再让整块作废，而是收集起来交给渲染层挂提示
 // （用户决定：优先出图 + 底部报错，出不了图才是全面报错）。
 // 但那道旧闸门同时在挡「误把普通段落当标签」，放宽后要用另外三条判据补上：
-//   1. inner 含 "<"          —— 保留。matchSelfClosing 用 indexOf("/>") 找第一个 "/>",
-//                               可能跨到另一个标签里去，跨过去就会带上别人的 "<"。
+//   1. 自闭合 inner 含 "<"   —— matchSelfClosing 用 indexOf("/>") 找第一个 "/>",可能跨到
+//                               另一个标签里去，跨过去就会带上别人的 "<"。成对标签的
+//                               matchPaired 已拒绝未加引号的 "<"，引号内的 "<" 是合法值。
 //   2. 未归属文本含 ">"      —— 只对自闭合成立。合法自闭合标签的 inner 里，">" 只可能
 //                               出现在引号内（裸值的字符集本就排除了 ">"），而引号内的
 //                               会被当作属性值消费掉；它出现在未归属文本里，说明
@@ -169,7 +178,7 @@ const STRAY_BUDGET = 2;
  * @returns {{ attributes: Record<string, string>, unrecognized: string[] } | null}
  */
 function parseAttrs(inner, selfClosing) {
-	if (inner.includes("<")) return null;
+	if (selfClosing && inner.includes("<")) return null;
 	const { attributes, remainder } = scanAttrs(inner);
 	// 按空白切片：remainder 是原文的忠实切片，切出来的每一片就是用户写下的那一整条
 	// （`零售业务Label="零售业务"` 整条，而不是光秃秃的 `零售业务`）。值里带空格的
