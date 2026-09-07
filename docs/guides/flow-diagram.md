@@ -17,6 +17,8 @@ Layered DAG layout, six node colors, edge labels and arrowheads:
 
 ![FlowDiagram layout](../_assets/flow-diagram.png)
 
+The diagram keeps a minimum display width of 720 px. In a narrower reading view, scroll horizontally inside the diagram to see the rest; the note itself does not widen.
+
 ## Writing it
 
 **Shape A (graph JSON).** Attributes go on the opening tag; the payload is a single ` ```json ` fence whose top level is a `{nodes, edges}` object:

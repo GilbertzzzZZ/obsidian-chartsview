@@ -17,6 +17,8 @@
 
 ![FlowDiagram layout](../_assets/flow-diagram.png)
 
+流程图保留 720 px 的最小显示宽度。阅读视图更窄时，在图内横向滚动即可查看其余部分，笔记页面本身不会被撑宽。
+
 ## 写法
 
 **形态 A（graph JSON）**：属性写在开标签上，payload 是唯一的 ` ```json ` 围栏，顶层是 `{nodes, edges}` 对象：
