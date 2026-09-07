@@ -162,7 +162,8 @@
 	gap: 4px 10px;
 	min-width: 0;
 }
-.mosaic-block-title {
+/* Outrank the host's .markdown-rendered h3 without changing note headings. */
+.mosaic-block .mosaic-block-title {
 	margin: 0;
 	font-size: 15px;
 	font-weight: 760;
@@ -490,7 +491,8 @@
 .mosaic-flow-scroll {
 	overflow: auto;
 }
-.mosaic-flow-diagram svg {
+/* Canvas sizing must not reach the header's native SVG icon buttons. */
+.mosaic-flow-scroll > svg {
 	display: block;
 	width: 100%;
 	min-width: 720px;
