@@ -165,6 +165,8 @@ npm run install:vault  # build + 按 MOSAIC_PLUGIN_DIR 拷三件套到测试 vau
 
 ## Git 规则
 
-- 遵守全局 Git Protocol（分支 → commit+push → PR → merge 后清理）；默认不在 main 上 commit。
+- 默认交付流程：在任务分支开发与提交 → 在本地合并到 `main` → 推送 `origin/main`。除非用户另有说明，不创建 PR，不直接在 `main` 开发或提交改动。
+- 本地合并在主仓库执行；任务 worktree 不切换到 `main`。合并前确认工作区干净，获取远端状态，并将本地 `main` 快进到 `origin/main`；无法快进或出现语义冲突时停止并报告。
 - commit 前必须 `npm test` 全绿 + `npm run build` 通过。
+- 推送后确认本地 `main`、`origin/main` 与远端主分支指向同一提交，并跟进该提交的 CI（持续集成）结果。合并和推送不授权打标签或发布版本。
 - tag 名必须与 `manifest.json` 的 `version` 一字不差且不带 `v` 前缀；`scripts/verify-release-tag.mjs` 在 CI 里把这条钉死。
