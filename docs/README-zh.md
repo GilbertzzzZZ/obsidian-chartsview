@@ -292,7 +292,7 @@ c,Resolve,end,
 
 ## 文档
 
-各内容块的参考指导都是中文，每篇都带完整属性表、payload 契约与报错清单。`mosaic-intro` 以英文版为准，中文版是镜像翻译。
+`docs/guides/` 中的用户指南提供中英文版本，以英文为准。各篇参考指南都带完整属性表、payload 契约与报错清单。
 
 - [Mosaic intro 中文版](mosaic-intro-zh.md)（[English](mosaic-intro.md) 为准）——定位、架构与 Roadmap
 - [标签写法通则](guides/tag-syntax-zh.md)——所有标签共用的写法规则、行提取、按原文渲染的情形
@@ -305,6 +305,8 @@ c,Resolve,end,
 - [Dataset 指导](guides/dataset-guide-zh.md)——数据集 manifest 契约、查询语义、排错
 
 设计说明（为什么这么设计）：[architecture](design/architecture.md)，以及 [design/](design/) 下每类内容块各一篇。
+
+面向开发者与维护者的工程操作指南放在 [docs/engineering/](engineering/)，只保留英文。
 
 ## 隐私与披露
 
@@ -327,7 +329,8 @@ npm test        # node --test，只测纯数据层模块
 npm run build   # tsc typecheck + esbuild 打包 -> main.js
 ```
 
-发版流程见 [guides/publishing-to-obsidian.md](guides/publishing-to-obsidian.md)。
+- 发版流程：[docs/engineering/publishing-to-obsidian.md](engineering/publishing-to-obsidian.md)。
+- 上游渲染同步：[docs/engineering/openglance-rendering-sync.md](engineering/openglance-rendering-sync.md)。
 
 ## 参与贡献
 

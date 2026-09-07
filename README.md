@@ -290,7 +290,7 @@ Detailed positioning and architecture notes: [docs/mosaic-intro.md](docs/mosaic-
 
 ## Documentation
 
-The README and the intro below are in English. The per-block reference guides are currently written in Chinese — each one carries the full attribute table, the payload contract and a catalogue of error messages.
+User guides in `docs/guides/` have English and Chinese versions, with English as the source of truth. Each reference guide carries the full attribute table, the payload contract and a catalogue of error messages.
 
 - [Mosaic intro](docs/mosaic-intro.md) ([中文](docs/mosaic-intro-zh.md)) — positioning, architecture and roadmap *(English)*
 - [Tag syntax](docs/guides/tag-syntax.md) — rules shared by all tag blocks, row extraction, fall-back-to-source cases
@@ -303,6 +303,8 @@ The README and the intro below are in English. The per-block reference guides ar
 - [Dataset guide](docs/guides/dataset-guide.md) — dataset manifest contract, query semantics, troubleshooting
 
 Design notes (why it works this way): [architecture](docs/design/architecture.md), plus one document per block type in [docs/design/](docs/design/).
+
+Developer and maintainer workflow guides live in [docs/engineering/](docs/engineering/) and are English-only.
 
 ## Privacy and disclosures
 
@@ -325,7 +327,8 @@ npm test        # node --test, pure data-layer modules
 npm run build   # tsc typecheck + esbuild bundle -> main.js
 ```
 
-Release procedure: [docs/guides/publishing-to-obsidian.md](docs/guides/publishing-to-obsidian.md).
+- Release procedure: [docs/engineering/publishing-to-obsidian.md](docs/engineering/publishing-to-obsidian.md).
+- Upstream rendering sync: [docs/engineering/openglance-rendering-sync.md](docs/engineering/openglance-rendering-sync.md).
 
 ## Contributing
 
