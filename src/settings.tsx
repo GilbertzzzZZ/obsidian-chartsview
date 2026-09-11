@@ -130,7 +130,7 @@ export class MosaicSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		const installer = this.plugin.guideInstaller;
-		const scope: GuideScope = Platform.isDesktopApp && installer.global ? "global" : "vault";
+		const scope: GuideScope = Platform.isDesktopApp && !Platform.isMobile && installer.global ? "global" : "vault";
 		const disabled = () => installer.busy;
 		const parent = scope === "global" ? installer.globalSkillFolder : this.plugin.settings.skillFolder;
 		const skillPath = parent ? `${parent.replace(/[\\/]+$/, "")}/mosaic/SKILL.md` :
@@ -142,7 +142,7 @@ export class MosaicSettingTab extends PluginSettingTab {
 		].filter(Boolean);
 		const customStatus = targetDescription("Guide", "custom", "vault", this.plugin);
 		const skillItems: SettingGroupItem[] = [];
-		if (Platform.isDesktopApp) {
+		if (Platform.isDesktopApp && !Platform.isMobile) {
 			skillItems.push({
 				name: "Global",
 				desc: `${scopeLabel(scope)}. Enable to import skills outside this vault. This choice stays on this device.`,
@@ -259,7 +259,7 @@ export class MosaicSettingTab extends PluginSettingTab {
 		if (key === SHOW_EXPORT_BTN) return this.plugin.settings.showExportBtn;
 		if (key === GUIDE_FOLDER) return this.plugin.settings.guideFolder;
 		if (key === SKILL_FOLDER) return this.plugin.settings.skillFolder;
-		if (key === GLOBAL) return Platform.isDesktopApp && this.plugin.guideInstaller.global;
+		if (key === GLOBAL) return Platform.isDesktopApp && !Platform.isMobile && this.plugin.guideInstaller.global;
 		return undefined;
 	}
 
@@ -268,7 +268,7 @@ export class MosaicSettingTab extends PluginSettingTab {
 			if (this.plugin.guideInstaller.busy) return;
 			try {
 				if (key === GLOBAL) {
-					if (Platform.isDesktopApp) this.plugin.guideInstaller.setGlobal(Boolean(value));
+					if (Platform.isDesktopApp && !Platform.isMobile) this.plugin.guideInstaller.setGlobal(Boolean(value));
 				} else {
 					const previous = this.plugin.settings[key];
 					this.plugin.settings[key] = typeof value === "string" ? normalizePath(value) : "";

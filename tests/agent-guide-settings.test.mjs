@@ -308,6 +308,34 @@ test("mobile never exposes or reads global controls and statuses", () => {
 	assert.match(definitions.find((item) => item.name === "Agent skills").desc, /Current vault/);
 });
 
+test("desktop mobile emulation hides Global and routes all imports to the vault", async () => {
+	Platform.isDesktopApp = true;
+	Platform.isMobile = true;
+	try {
+		const { plugin, calls } = settingsPlugin();
+		const tab = new MosaicSettingTab({}, plugin);
+		assert.equal(rows(tab).some((item) => item.name === "Global"), false);
+		plugin.guideInstaller.setGlobal = () => { throw new Error("desktop state written"); };
+		Object.defineProperty(plugin.guideInstaller, "global", { get() { throw new Error("desktop state accessed"); } });
+		Notice.messages.length = 0;
+		assert.equal(tab.getControlValue("global"), false);
+		await tab.setControlValue("global", true);
+		assert.deepEqual(Notice.messages, []);
+		const definitions = rows(tab);
+		assert.ok(definitions.find((item) => item.control?.key === "skillFolder"));
+		assert.match(definitions.find((item) => item.name === "Agent skills").desc, /Current vault/);
+		for (const name of ["Agent skills", "Usage guide"]) {
+			const row = settingRow();
+			definitions.find((item) => item.name === name).render(row);
+			for (const button of row.buttons) await button.click();
+		}
+		assert.deepEqual(calls, [["agents", "vault"], ["claude", "vault"], ["skillPath", "vault"], ["custom", "vault"]]);
+	} finally {
+		Platform.isDesktopApp = false;
+		Platform.isMobile = false;
+	}
+});
+
 test("selected scope status never leaks another scope and ordinary guide status stays vault scoped", () => {
 	Platform.isDesktopApp = true;
 	try {
