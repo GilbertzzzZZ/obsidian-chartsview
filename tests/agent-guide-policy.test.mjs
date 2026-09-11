@@ -17,6 +17,13 @@ test("three destinations use the agreed names", () => {
 	assert.equal(guideTargetPath("custom", ""), "Mosaic-Usage-Guide.md");
 });
 
+test("custom skill parents append the skill directory instead of a guide document", () => {
+	assert.equal(guideTargetPath("skillPath", "skills"), "skills/mosaic/SKILL.md");
+	assert.equal(guideTargetPath("custom", "docs/guides"), "docs/guides/Mosaic-Usage-Guide.md");
+	assert.equal(guideTargetPath("skillPath", ""), "mosaic/SKILL.md");
+	assert.throws(() => guideTargetPath("skillPath", "../outside"), /vault-relative/);
+});
+
 test("automatic updates never recreate a missing guide", () => {
 	assert.equal(
 		decideGuideWrite({

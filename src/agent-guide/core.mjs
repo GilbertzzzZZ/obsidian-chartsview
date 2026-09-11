@@ -1,4 +1,4 @@
-/** @typedef {"agents" | "claude" | "custom"} GuideTarget */
+/** @typedef {"agents" | "claude" | "skillPath" | "custom"} GuideTarget */
 /** @typedef {"manual" | "auto"} GuideMode */
 /** @typedef {"write" | "unchanged" | "missing" | "conflict" | "not-installed" | "newer"} GuideWriteDecision */
 
@@ -10,7 +10,7 @@
 export function guideTargetPath(target, folder) {
 	if (target === "agents") return ".agents/skills/mosaic/SKILL.md";
 	if (target === "claude") return ".claude/skills/mosaic/SKILL.md";
-	if (target === "custom") {
+	if (target === "custom" || target === "skillPath") {
 		const source = String(folder ?? "").trim();
 		if (
 			/^[\\/]/.test(source) ||
@@ -25,7 +25,8 @@ export function guideTargetPath(target, folder) {
 			throw new Error("Guide folder must be a vault-relative path.");
 		}
 		const prefix = parts.filter((part) => part && part !== ".").join("/");
-		return prefix ? `${prefix}/Mosaic-Usage-Guide.md` : "Mosaic-Usage-Guide.md";
+		const suffix = target === "skillPath" ? "mosaic/SKILL.md" : "Mosaic-Usage-Guide.md";
+		return prefix ? `${prefix}/${suffix}` : suffix;
 	}
 	throw new Error(`Unknown guide target: ${String(target)}`);
 }

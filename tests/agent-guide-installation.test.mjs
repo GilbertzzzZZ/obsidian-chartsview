@@ -129,6 +129,33 @@ test("only explicit installation creates a guide", async () => {
 	assert.match(host.settings.guideInstalls.agents.hash, /^[a-f0-9]{64}$/);
 });
 
+test("absent folders adopt defaults while an explicit root and root record survive", async () => {
+	const fresh = createHost();
+	delete fresh.host.settings.guideFolder;
+	const installer = new GuideInstaller(fresh.host, "# Guide");
+	assert.equal(installer.global, false);
+	assert.equal((await installer.install("custom")).path, "docs/guides/Mosaic-Usage-Guide.md");
+	assert.equal((await installer.install("skillPath")).path, ".agents/skills/mosaic/SKILL.md");
+	const root = createHost({ guideInstalls: {
+		custom: { path: "Mosaic-Usage-Guide.md", version: "1.1.6", hash: "a".repeat(64) },
+	} });
+	const migrated = new GuideInstaller(root.host, "# Guide");
+	assert.equal(root.settings.guideFolder, "");
+	assert.equal(migrated.getRecord("custom", "vault").path, "Mosaic-Usage-Guide.md");
+});
+
+test("vault custom skill paths stay relative and results identify scope", async () => {
+	const { host, files } = createHost();
+	host.settings.skillFolder = "skills";
+	const installer = new GuideInstaller(host, "# Guide");
+	const result = await installer.install("skillPath", "vault");
+	assert.equal(result.status, "installed");
+	assert.equal(result.scope, "vault");
+	assert.equal(result.path, "skills/mosaic/SKILL.md");
+	assert.ok(files.has("skills/mosaic/SKILL.md"));
+	assert.equal(installer.getResult("skillPath", "vault"), result);
+});
+
 test("repeated installation leaves an owned guide untouched", async () => {
 	const { files, host, stats } = createHost();
 	const installer = new GuideInstaller(host, "# Guide");

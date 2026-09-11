@@ -4,7 +4,7 @@
 import React from "react";
 // 替身里的 TFile（obsidian-stub.mjs）。dataset 模式的加载器用 `instanceof TFile`
 // 判文件，测试要造 vault 就得拿到打包产物里的那一个类，不能自己 new 一个同名的。
-import { Notice, TFile } from "obsidian";
+import { Notice, TFile, Platform } from "obsidian";
 import MosaicPlugin from "../../src/main";
 import { MosaicSettingTab } from "../../src/settings";
 import { createChartTagProcessor } from "../../src/entry/chart-tag-processor";
@@ -20,6 +20,7 @@ export {
 	React,
 	Notice,
 	TFile,
+	Platform,
 	MosaicPlugin,
 	MosaicSettingTab,
 	BLOCK_LANGUAGES,

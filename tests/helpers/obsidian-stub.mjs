@@ -2,6 +2,7 @@
 // 打包测试用的 `obsidian` 替身：宿主包本身只发布 .d.ts，运行期没有任何实现。
 // 只提供本仓库真正调用到的那几个符号。
 export const apiVersion = "1.13.7";
+export const Platform = { isDesktopApp: false };
 
 // 图标注入：真身把一段 lucide svg 写进 innerHTML。这里落成一个属性，断言看得见
 // 「哪个按钮挂了哪个图标」，又不必真的搬一套 svg 进来。

@@ -72,12 +72,14 @@ test("legacy settings receive independent guide defaults", async () => {
 
 	assert.deepEqual(first.settings, {
 		showExportBtn: true,
-		guideFolder: "",
+		guideFolder: "docs/guides",
+		skillFolder: ".agents/skills",
 		guideInstalls: {},
 	});
 	assert.deepEqual(second.settings, {
 		showExportBtn: false,
-		guideFolder: "",
+		guideFolder: "docs/guides",
+		skillFolder: ".agents/skills",
 		guideInstalls: {},
 	});
 	assert.notEqual(first.settings.guideInstalls, second.settings.guideInstalls);
@@ -105,7 +107,7 @@ test("declarative guide controls target Agents, Claude, and the chosen folder", 
 	assert.deepEqual(folder.control, {
 		type: "folder",
 		key: "guideFolder",
-		defaultValue: "",
+		defaultValue: "docs/guides",
 		includeRoot: true,
 	});
 	await tab.setControlValue("guideFolder", "Reference");

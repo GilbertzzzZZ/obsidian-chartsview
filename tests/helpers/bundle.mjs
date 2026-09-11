@@ -8,6 +8,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { builtinModules } from "node:module";
 
 let cached;
 
@@ -18,6 +19,8 @@ export async function loadComponents() {
 		entryPoints: [join(here, "entry.tsx")],
 		bundle: true,
 		format: "esm",
+		external: [...builtinModules, "@electron/remote"],
+		banner: { js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' },
 		target: "es2017",
 		write: false,
 		logLevel: "silent",

@@ -18,7 +18,7 @@ const context = await esbuild.context({
 	},
 	entryPoints: ['src/main.tsx'],
 	bundle: true,
-	external: ['obsidian', 'electron', ...builtinModules],
+	external: ['obsidian', 'electron', '@electron/remote', ...builtinModules],
 	format: 'cjs',
 	target: 'es2017',
 	logLevel: 'info',

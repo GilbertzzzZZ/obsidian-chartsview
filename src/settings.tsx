@@ -9,12 +9,14 @@ import type {
 export interface MosaicPluginSettings {
 	showExportBtn: boolean;
 	guideFolder: string;
+	skillFolder: string;
 	guideInstalls: GuideInstalls;
 }
 
 export const DEFAULT_SETTINGS: MosaicPluginSettings = {
 	showExportBtn: false,
-	guideFolder: "",
+	guideFolder: "docs/guides",
+	skillFolder: ".agents/skills",
 	guideInstalls: {},
 };
 
