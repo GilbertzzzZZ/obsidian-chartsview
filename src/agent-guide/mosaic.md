@@ -27,12 +27,19 @@
 
 **Tag form**
 
+- Use paired tags for inline payloads that fit the host boundaries below.
 - Keep the opening tag on one line.
 - Put the matching, case-sensitive closing tag alone on a line.
 - Do not put blank lines inside the body.
 - Do not mix unrelated text into the tag paragraph.
 - Use ASCII attribute names.
 - Do not put spaces around `=`.
+
+**Self-closing tags**
+
+- Self-closing tags are for external-dataset Chart and DataTable blocks only.
+- Use them when `dataset` supplies the data and the block has no inline body.
+- Do not use them for MetricGrid, Timeline, DecisionBox, or FlowDiagram.
 
 ---
 
@@ -42,7 +49,9 @@
 
 ### Chart
 
-- `type` selects the chart shape, `x` selects the category field, and `series` selects numeric fields.
+- `type` selects the chart shape.
+- `x` selects the category field.
+- `series` selects numeric fields.
 
 ```chart
 ---
@@ -59,6 +68,7 @@ month,amount
 ### DataTable
 
 - Inline tables accept CSV, TSV, JSON rows, or a Markdown table.
+- Provide at least one column and one data row.
 
 ```datatable
 ---
@@ -73,6 +83,7 @@ Review,1
 
 - Rows use `label` and `value`.
 - Optional `delta`, `note`, and `status` fields add context and status color.
+- Rows with both `label` and `value` empty are omitted.
 
 ```metricgrid
 ---
@@ -85,6 +96,8 @@ Remaining,3
 
 ### Timeline
 
+- Provide at least one data row.
+- No individual Timeline field is required.
 - Rows may include `date`, `title`, `body`, `owner`, and `status`.
 
 ```timeline
@@ -100,6 +113,7 @@ date,title
 
 - Structured rows use `label` and `value`.
 - `status`, `owner`, and `source` are optional attributes.
+- An empty or unstructured body is allowed and uses the rich-text fallback.
 
 ```decisionbox
 ---
@@ -114,6 +128,8 @@ Choice,Ship a small first version
 
 - Graph JSON contains `nodes` and `edges`.
 - Tabular rows with an `id` and `next` field are also supported.
+- Provide at least one node.
+- Use stable node ids when edges must connect them.
 
 ```flowdiagram
 ---
@@ -121,6 +137,27 @@ title: Delivery flow
 ---
 {"nodes":[{"id":"draft","label":"Draft"},{"id":"review","label":"Review"}],"edges":[{"from":"draft","to":"review"}]}
 ```
+
+---
+
+## Chart rules
+
+> Chart attributes describe a supported visual contract, not an arbitrary chart-library configuration.
+
+- Supported `type` values are `line`, `bar`, `grouped-bar`, `stacked-bar`, `combo`, and `combo-dual-axis`.
+- `bar` and `grouped-bar` both place multiple series side by side.
+- `stacked-bar` stacks series within each x value.
+- `combo` and `combo-dual-axis` need both bar and line series. Use `bars` and `lines` to assign their roles.
+- Inline Chart requires a header row and at least one data row.
+- `x` defaults to the first CSV column. `series` defaults to every remaining column.
+- Every explicitly named x or series field must exist in the CSV header.
+- Every non-x CSV cell must contain a number or be empty.
+- Inline Chart rejects non-empty cells beyond the CSV header width. Empty trailing cells are allowed.
+- Use `unit` for a single-axis chart. `%` is a suffix, `元` / `¥` / `cny` / `rmb` become a `¥` prefix, `$` / `usd` become a `$` prefix, and other units appear beside the title.
+- Use `leftUnit` and `rightUnit` for `combo-dual-axis`. `unit` is the fallback for the left axis when `leftUnit` is absent.
+- Use `labels` to show or hide value labels and `<field>Label` to rename a series. Value labels are on by default, and a dataset field's `label` is the default series name.
+- Every Y axis includes zero, including both axes of `combo-dual-axis`.
+- Manual Y-axis bounds are unsupported. Do not generate `yMin` or `yMax`.
 
 ---
 
@@ -205,3 +242,8 @@ title: Monthly output
 - Chart drops granularities that would exceed 120 plotted buckets. DataTable has no equivalent display-density limit.
 - A missing `---` boundary makes a code block invalid. Malformed attribute lines are skipped and reported when at least one valid attribute remains.
 - A red `Mosaic:` box reports a recognized block with invalid data. A tag that violates host paragraph boundaries remains visible as source.
+
+**Before writing**
+
+- If required user data, a field meaning, or an aggregation rule is missing or unclear, ask the user before writing the block.
+- Never invent user data or an aggregation definition.

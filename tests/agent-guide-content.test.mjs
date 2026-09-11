@@ -50,6 +50,24 @@ test("the shipped guide contains valid examples for every block", () => {
 	}
 });
 
+test("the guide states the bounded generation rules agents must follow", () => {
+	const body = readGuide();
+	const requiredRules = [
+		/`line`, `bar`, `grouped-bar`, `stacked-bar`, `combo`, and `combo-dual-axis`/,
+		/Inline Chart requires a header row and at least one data row/,
+		/Use `unit` for a single-axis chart/,
+		/Use `leftUnit` and `rightUnit` for `combo-dual-axis`/,
+		/`labels`.*`<field>Label`/,
+		/Every Y axis includes zero/,
+		/Do not generate `yMin` or `yMax`/,
+		/Self-closing tags are for external-dataset Chart and DataTable blocks only/,
+		/non-empty cells beyond the CSV header width/,
+		/ask the user before writing the block/,
+		/Never invent user data or an aggregation definition/,
+	];
+	for (const rule of requiredRules) assert.match(body, rule);
+});
+
 test("every inline guide example renders its intended block", async () => {
 	const selectors = {
 		chart: "[data-plot]",
@@ -89,6 +107,11 @@ test("every inline guide example renders its intended block", async () => {
 			);
 			await flush();
 			assert.equal(query(el, ".mosaic-error"), null, language);
+			assert.equal(
+				query(el, ".mosaic-figure-warning"),
+				null,
+				`${language} produced a semantic warning`,
+			);
 			assert.notEqual(query(el, selectors[language]), null, language);
 		} finally {
 			for (const teardown of teardowns) teardown();
