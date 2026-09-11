@@ -55,7 +55,7 @@
 > Fix the reported path or permission problem, then repeat the same button action.
 
 - If an unrelated file already occupies the destination, Mosaic keeps it. Rename or move that file before retrying.
-- If the folder cannot be written, restore write access or select another vault folder before retrying.
+- If the custom document folder cannot be written, restore write access or choose another `Guide folder`. For `Agents` or `Claude`, restore write access to that target's fixed parent directories.
 - Mosaic records an installation only after the file write succeeds.
 - If the file was written but saving the installation record failed, click the same button again. Mosaic recognizes the complete file and records it without replacing its content.
 - The result and path remain visible in Mosaic's settings, while manual actions also show a short notice.
