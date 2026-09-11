@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { parseBlockSource } from "../src/parse/block-source.mjs";
-import { COMPONENT_NAMES } from "../src/parse/chart-tag.mjs";
+import { COMPONENT_NAMES, findComponentTags } from "../src/parse/chart-tag.mjs";
+import { queryDataset } from "../src/parse/dataset-query.mjs";
+import { extractRows, metricItem, timelineItem, decisionItems, parseRichBlocks } from "../src/parse/blocks/payload.mjs";
+import { extractFlowDiagram } from "../src/parse/blocks/flow.mjs";
 import {
 	parseDatasetData,
 	parseDatasetManifest,
@@ -12,11 +15,12 @@ import {
 	flush,
 	installGlobals,
 	query,
+	queryAll,
 } from "./helpers/dom.mjs";
 
 installGlobals();
 const { loadComponents } = await import("./helpers/bundle.mjs");
-const { BLOCK_LANGUAGES, createBlockProcessor } = await loadComponents();
+const { BLOCK_LANGUAGES, createBlockProcessor, createChartTagProcessor, TFile } = await loadComponents();
 
 const readGuide = () =>
 	readFileSync(new URL("../src/agent-guide/mosaic.md", import.meta.url), "utf8");
@@ -50,6 +54,42 @@ test("the shipped guide contains valid examples for every block", () => {
 	}
 });
 
+test("the guide demonstrates every supported chart type with runnable data", () => {
+	const types = new Set(blockExamples(readGuide())
+		.filter(([, language]) => language === "chart")
+		.map(([, , source]) => parseBlockSource(source).attributes.type));
+	for (const type of ["line", "bar", "grouped-bar", "stacked-bar", "combo", "combo-dual-axis"]) {
+		assert.ok(types.has(type), `guide has no runnable ${type} example`);
+	}
+});
+
+test("the worked card examples carry statuses, context, formatting and connected branches", () => {
+	const examples = blockExamples(section(readGuide(), "Inline examples"));
+	const payloads = (language) => examples.filter(([, name]) => name === language)
+		.map(([, , source]) => parseBlockSource(source).body);
+	const metrics = payloads("metricgrid").flatMap((body) => extractRows(body).map(metricItem));
+	assert.ok(metrics.some((item) => item.delta && item.note && item.status === "good"), "missing contextual metric");
+	assert.ok(metrics.some((item) => item.status === "risk"), "missing risk metric");
+	const milestones = payloads("timeline").flatMap((body) => extractRows(body).map(timelineItem));
+	assert.ok(milestones.some((item) => item.owner && item.body && item.status === "blocked"), "missing owned blocked milestone");
+	const decisions = payloads("decisionbox");
+	assert.ok(decisions.some((body) => decisionItems(extractRows(body)).some((item) => String(item.value).includes("**"))), "missing formatted decision");
+	assert.ok(decisions.some((body) => decisionItems(extractRows(body)).length === 0 && parseRichBlocks(body).length >= 3), "missing rich-text fallback");
+	const graphs = payloads("flowdiagram").map(extractFlowDiagram);
+	assert.ok(graphs.some((graph) => graph.nodes.some((node) => node.type === "decision" && node.note)
+		&& graph.edges.filter((edge) => edge.label).length >= 2), "missing labeled decision branches");
+});
+
+test("the mapped dataset example produces a weighted quarterly ratio from its own source", () => {
+	const body = section(readGuide(), "Mapped dataset and rollups");
+	const manifest = parseDatasetManifest([...body.matchAll(/^```json\n([\s\S]*?)^```$/gm)][0][1]);
+	const rows = parseDatasetData(manifest, [...body.matchAll(/^```csv\n([\s\S]*?)^```$/gm)][0][1]);
+	assert.equal(rows.length, 3);
+	assert.deepEqual(rows.map((row) => row.Visits), [1200, 1800, 1000]);
+	const result = queryDataset({ manifest, rows, component: "DataTable", attributes: { columns: "Date,Orders,Visits,Conversion" }, granularity: "quarter", granularityOptions: ["month", "quarter"] });
+	assert.deepEqual(result.rows, [{ Date: "2026-Q1", Orders: 200, Visits: 4000, Conversion: 5 }]);
+});
+
 test("the guide states the bounded generation rules agents must follow", () => {
 	const body = readGuide();
 	const requiredRules = [
@@ -68,7 +108,7 @@ test("the guide states the bounded generation rules agents must follow", () => {
 	for (const rule of requiredRules) assert.match(body, rule);
 });
 
-test("every inline guide example renders its intended block", async () => {
+test("every runnable guide block renders from its actual inline or bundled external data", async () => {
 	const selectors = {
 		chart: "[data-plot]",
 		datatable: "table",
@@ -77,9 +117,22 @@ test("every inline guide example renders its intended block", async () => {
 		decisionbox: ".mosaic-decision-list",
 		flowdiagram: "svg",
 	};
-	const examples = blockExamples(section(readGuide(), "Inline examples"));
+	const body = readGuide();
+	const examples = blockExamples(body);
+	const negativeExamples = [...body.matchAll(/^```(chart|metricgrid) invalid\n([\s\S]*?)^```$/gm)];
+	assert.equal(negativeExamples.length, 2, "the deliberate failures must remain testable");
+	for (const [raw, language, source] of negativeExamples) examples.push([raw, language, source, "invalid"]);
+	const tagExamples = [...body.matchAll(/^(`{3,4})text\n(<[\s\S]*?)^\1$/gm)];
+	assert.equal(tagExamples.length, 4, "paired CSV/TSV and both external references are demonstrated");
+	for (const [, , source] of tagExamples) {
+		const tags = findComponentTags(source);
+		assert.equal(tags.length, 1, "tag example must parse as one complete component");
+		examples.push([source, tags[0].name.toLowerCase(), source, "tag"]);
+	}
+	const files = new Map([...body.matchAll(/^### `(data\/[^`]+)`\n\n```(?:json|csv)\n([\s\S]*?)^```$/gm)]
+		.map(([, path, contents]) => [path, contents]));
 
-	for (const [, language, source] of examples) {
+	for (const [, language, source, kind] of examples) {
 		const el = document.createElement("div");
 		document.body.appendChild(el);
 		const teardowns = [];
@@ -91,28 +144,52 @@ test("every inline guide example renders its intended block", async () => {
 				teardowns.push(teardown);
 				return teardown;
 			},
-			app: {},
+			app: { vault: {
+				getAbstractFileByPath(path) { return files.has(path) ? Object.assign(new TFile(), { path }) : null; },
+				async cachedRead(file) { return files.get(file.path); },
+			} },
 		};
 		const ctx = {
 			sourcePath: "guide-example.md",
 			addChild() {},
-			getSectionInfo: () => null,
+			getSectionInfo: () => kind === "tag" ? { text: source, lineStart: 0, lineEnd: source.split("\n").length - 1 } : null,
 		};
 
 		try {
-			await createBlockProcessor(plugin, BLOCK_LANGUAGES[language], language)(
-				source,
-				el,
-				ctx,
-			);
+			if (kind === "tag") await createChartTagProcessor(plugin)(el, ctx);
+			else await createBlockProcessor(plugin, BLOCK_LANGUAGES[language], language)(source, el, ctx);
 			await flush();
-			assert.equal(query(el, ".mosaic-error"), null, language);
+			if (kind === "invalid") {
+				const error = query(el, ".mosaic-error")?.textContent ?? "";
+				assert.match(error, language === "chart" ? /Inline data does not support the "granularity" attribute/ : /External datasets support Chart and DataTable/);
+				assert.equal(query(el, selectors[language]), null, "negative example must not render a success view");
+				continue;
+			}
+			assert.equal(query(el, ".mosaic-error")?.textContent, undefined, language);
 			assert.equal(
 				query(el, ".mosaic-figure-warning"),
 				null,
 				`${language} produced a semantic warning`,
 			);
-			assert.notEqual(query(el, selectors[language]), null, language);
+			const parsed = kind === "tag" ? findComponentTags(source)[0] : parseBlockSource(source);
+			const selector = language === "decisionbox" && decisionItems(extractRows(parsed.body)).length === 0
+				? ".mosaic-decision-body" : selectors[language];
+			assert.notEqual(query(el, selector), null, `${language}: ${parsed.attributes.title}`);
+			if (language === "decisionbox") {
+				assert.notEqual(query(el, "strong"), null, "decision example must render emphasis");
+				assert.notEqual(query(el, "code"), null, "decision example must render inline code");
+			}
+			if (parsed.attributes.dataset) {
+				const buttons = queryAll(el, ".mosaic-granularity-btn");
+				assert.ok(buttons.length > 0, "external example must offer its granularity");
+				for (const button of buttons) {
+					button.click();
+					await flush();
+					assert.equal(button.getAttribute("aria-pressed"), "true", "requested granularity becomes active");
+					assert.equal(query(el, ".mosaic-error"), null, "dataset switch must succeed");
+					assert.equal(query(el, ".mosaic-figure-warning"), null, "dataset switch must preserve complete coverage");
+				}
+			}
 		} finally {
 			for (const teardown of teardowns) teardown();
 			el.remove();
