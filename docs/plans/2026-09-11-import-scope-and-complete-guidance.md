@@ -203,7 +203,7 @@ for (const type of ["line", "bar", "grouped-bar", "stacked-bar", "combo", "combo
 - [x] **Step 3: Run full tests/build and budget check.** `npm test`, `npm run build`, `wc -c main.js`; keep the bundle below 1,843,200 bytes. Verify Node 22/24 via the existing CI.
 - [x] **Step 4: Verify in an isolated Obsidian test vault.** Confirm two headings/buttons, default Current vault, default guide import, native vault folder selection, canceled global picker, actual desktop files in an isolated temporary home, independent scopes, no global IO with mobile emulation, and modification/update protections. Do not write real user-global skills during agent testing.
 - [x] **Step 5: Validate an actual available agent using only the installed complete guide and synthetic data.** Exercise combo/dual-axis, labeled colored series, richer cards and external dataset instructions; parse/render outputs and record failures accurately. Keep client login/platform limitations explicit.
-- [ ] **Step 6: Finish scoped and whole-branch reviews, fix real findings, run final verification and deliver under repository Git rules.** No extra review pipeline or release. Keep incomplete acceptance explicit instead of archiving a falsely completed plan.
+- [x] **Step 6: Finish scoped and whole-branch reviews, fix real findings, run final verification and deliver under repository Git rules.** No extra review pipeline or release. Keep incomplete acceptance explicit instead of archiving a falsely completed plan.
 
 ---
 
@@ -225,4 +225,5 @@ for (const type of ["line", "bar", "grouped-bar", "stacked-bar", "combo", "combo
 - Actual Codex 0.154.0 fresh sessions used only installed guidance and synthetic data. Generated dual-axis Chart, MetricGrid and FlowDiagram passed real parsing/rendering without errors or semantic warnings. A separate generated mapped CSV/manifest and Chart/DataTable produced quarterly Orders 200, Visits 4,000 and Conversion 5, with four successful granularity switches.
 - Client environment limitation: Codex emitted a skill-context-budget warning unrelated to Mosaic. Claude was not logged in, so actual Claude discovery/invocation remains unverified. Physical macOS, Windows and mobile devices were not tested.
 - Test-vault settings were restored after acceptance. Temporary test-home authorization was removed; no real user-global skills were written.
-- Status: implementation and scoped acceptance complete; final whole-branch review and main/CI delivery remain pending. No release is authorized.
+- Final whole-branch review approved `7894164` with no blocking findings. That commit was merged locally to main and pushed; local main, origin/main and the remote branch matched. Both Node 22 and Node 24 passed in [main CI run 34592326713](https://github.com/GilbertzzzZZ/obsidian-mosaic/actions/runs/34592326713).
+- Status: implementation, review and main delivery complete. The client/platform limitations above remain explicitly unverified, so this plan stays available for acceptance follow-up. No tag or release was created.
