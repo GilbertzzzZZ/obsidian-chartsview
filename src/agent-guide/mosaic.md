@@ -392,7 +392,7 @@ Attributes are optional except the data source: inline Chart needs CSV; external
 | `granularity` | External only: `auto` (default), day, week, month, quarter; case-insensitive |
 | `granularityOptions` | External only: comma-separated candidates; default `day,week,month,quarter`, intersected with source compatibility and chart density |
 
-For non-combo charts, selection uses the union of `series`, `bars`, and `lines`. Combo roles come from `bars` and `lines`; an extra field in `series` does not automatically acquire a role. Prefer explicit roles and do not assign one field to both. Canonical plural names take precedence over singular aliases. Combo legend order follows role attribute order; write `lines` before `bars` to put line series first.
+For non-combo charts, selection uses the union of `series`, `bars`, and `lines`. Combo roles come from `bars` and `lines`; an extra field in `series` does not automatically acquire a role. Prefer explicit roles and do not assign one field to both. Canonical plural names take precedence over singular aliases. For `combo`, legend order follows role attribute order. `combo-dual-axis` keeps bar series first.
 
 ### Numeric data, units, and visual limits
 
