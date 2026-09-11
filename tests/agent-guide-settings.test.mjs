@@ -179,6 +179,40 @@ test("a rejected install is caught, reported, and refreshes the settings twice",
 	assert.deepEqual(Notice.messages, ["Could not install Mosaic guidance: vault unavailable"]);
 });
 
+test("a returned guide error reports its target path and operation result", async () => {
+	Notice.messages.length = 0;
+	const result = {
+		target: "agents",
+		path: ".agents/skills/mosaic/SKILL.md",
+		status: "error",
+		message: "permission denied",
+	};
+	const installer = {
+		busy: false,
+		results: {},
+		async install() {
+			this.results.agents = result;
+			return result;
+		},
+	};
+	const { plugin } = settingsPlugin({ guideInstaller: installer });
+	const tab = new MosaicSettingTab({}, plugin);
+	const row = settingRow();
+	tab.getSettingDefinitions().find((item) => item.name === "Agent skills").render(row, null);
+
+	await row.buttons[0].click();
+
+	const description = tab.getSettingDefinitions()
+		.find((item) => item.name === "Agent skills").desc;
+	assert.match(
+		description,
+		/Guide operation failed at \.agents\/skills\/mosaic\/SKILL\.md: permission denied\./,
+	);
+	assert.deepEqual(Notice.messages, [
+		"Guide operation failed at .agents/skills/mosaic/SKILL.md: permission denied.",
+	]);
+});
+
 function pluginApp(layoutCallbacks, writes) {
 	return {
 		workspace: {

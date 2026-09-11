@@ -26,6 +26,12 @@ const GUIDE_FOLDER = "guideFolder" satisfies keyof MosaicPluginSettings;
 const CUSTOM_GUIDE_PROMPT =
 	"Ask your agent to read this file before creating Mosaic content.";
 
+function guideOperationFailure(result: GuideResult): string {
+	const location = result.path ? ` at ${result.path}` : "";
+	const detail = result.message ? `: ${result.message}` : "";
+	return `Guide operation failed${location}${detail}.`;
+}
+
 function targetDescription(
 	label: string,
 	target: GuideTarget,
@@ -53,7 +59,7 @@ function targetDescription(
 		case "busy":
 			return `${label}: another guide operation is running.`;
 		case "error":
-			return `${label}: installation failed${result.message ? `: ${result.message}` : "."}`;
+			return guideOperationFailure(result);
 	}
 }
 
@@ -83,7 +89,7 @@ function resultNotice(result: GuideResult): string {
 			message = "Another guide operation is already running.";
 			break;
 		case "error":
-			message = `Could not install Mosaic guidance${result.message ? `: ${result.message}` : "."}`;
+			message = guideOperationFailure(result);
 			break;
 	}
 	if (
