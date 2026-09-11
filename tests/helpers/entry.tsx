@@ -11,6 +11,7 @@ import { BLOCK_LANGUAGES } from "../../src/parse/chart-tag.mjs";
 import { renderInto, unmountRoot } from "../../src/render/react-root";
 import { renderComponentInto } from "../../src/render/render-component";
 import { ChartFigure } from "../../src/render/components/ChartFigure";
+import { GuideInstaller } from "../../src/agent-guide/installer";
 import { renders } from "@ant-design/plots";
 
 export {
@@ -23,5 +24,6 @@ export {
 	unmountRoot,
 	renderComponentInto,
 	ChartFigure,
+	GuideInstaller,
 	renders,
 };
