@@ -33,13 +33,15 @@ Mosaic 是 Obsidian 社区插件（plugin id `mosaic`，GitHub `GilbertzzzZZ/obs
 - **调用方向**只允许 entry → parse/render、render → parse。逆向依赖一律不写。
 - **加一类内容块只改 `COMPONENT_NAMES` 一处**，入口清单与语言名映射会跟着长出来。在别处手工补一份清单，就是埋下漂移。
 - **`src/parse/blocks/` 是已定型的数据层**：只报真 bug，不做风格重构，改动面压到最小。
+- **Agent 指导正文只维护 `src/agent-guide/mosaic.md` 一份英文源稿**：README 与 `docs/guides/agent-guide*.md` 只说明安装行为，不复制正文。
+- **修改 Agent 指导正文必须执行 `node --test tests/agent-guide-content.test.mjs`**：六类最小示例、完整数据清单与禁用字段全部通过才可提交。
 - **改动面 = 需求面**。顺手重构、顺手改名、顺手加一层抽象，一律不做。
 
 ### 3. 收工前必须过的关
 
 按顺序走，全过才算做完：
 
-1. `npm test`——352 条全绿，挂一条都不算完。
+1. `npm test`——386 条全绿，挂一条都不算完。
 2. `npm run build`——tsc typecheck 与 esbuild production 都要过。
 3. **行为变了就同步文档**：怎么用变了改 `docs/guides/`，为什么这么定变了改 `docs/design/`。两边都要看一眼，不要只改一边。
 4. 单元测试验不了的（画出来什么样、宿主行为、错误框出现在哪）才进测试 vault，纯函数能验的一律不放。
@@ -139,7 +141,7 @@ npm run install:vault  # build + 按 MOSAIC_PLUGIN_DIR 拷三件套到测试 vau
 
 - 测试 vault 是一个**独立的本地 git 仓库**，不是本仓库的子目录，也不被本仓库跟踪；`npm run install:vault` 按 `MOSAIC_PLUGIN_DIR` 环境变量部署三件套。不要用日常使用的 vault 做测试。
 - 改测试库前先 `git status` 看清工作区；写坏了 `git checkout` 就能回退，不需要手工备份。`.obsidian/` 不进 git（宿主状态，随每次部署和插件开关而变）。
-- **只放单元测试验不了的东西**。352 条单测已覆盖纯函数层（解析产物、配置对象、错误文案），这里验的是：画出来什么样、换写法结果一不一致、宿主行为、错误框出现在哪、给人看的效果。纯函数能验的一律不放——别名链就是反例，`tests/payload.test.mjs` 已有三条 `alias chain fallbacks`。
+- **只放单元测试验不了的东西**。386 条单测已覆盖纯函数层（解析产物、配置对象、错误文案），这里验的是：画出来什么样、换写法结果一不一致、宿主行为、错误框出现在哪、给人看的效果。纯函数能验的一律不放——别名链就是反例，`tests/payload.test.mjs` 已有三条 `alias chain fallbacks`。
 - **一份文件 = 一条可验证的断言，文件名说清验什么，不用编号**。六个类型目录下是能力名（`line.md` / `granularity.md` / `payload-forms.md` / `errors.md` …）。
 - **同一能力的所有写法放在同一份文件里**，小节标题固定 `## 代码块 · 内联` / `## 代码块 · 外部` / `## 标签 · 内联` / `## 标签 · 外部`，四段画同一张图——等价性验证是一屏之内的视觉对照，不是跨文件记忆对照。只有 Chart 与 DataTable 有四段，其余四类只有 `## 代码块` 与 `## 标签`（外部数据只这两类支持）。
 - `host-behavior/` 验宿主而非某个类型（主题切换、虚拟化与宽度、段落接管、插件启停）；`cases/` 是四篇模拟场景报告，效果呈现，写法刻意混杂且每篇留两处故意写错；`_assets/` 是数据文件；`_readme/` 是 README 截图专用页。

@@ -61,6 +61,8 @@
 
 **Manual**: download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/GilbertzzzZZ/obsidian-mosaic/releases/latest), copy them into `<vault>/.obsidian/plugins/mosaic/`, then enable **Mosaic** in Settings → Community plugins.
 
+**Optional agent guidance**: Mosaic's settings can write the same concise usage guide to fixed Agents, Claude, or custom-document locations inside the current vault. This happens only after you choose a destination. See [Install the Mosaic agent guide](docs/guides/agent-guide.md).
+
 ## Quick start
 
 Paste this into a note and switch to reading view:
@@ -293,6 +295,7 @@ Detailed positioning and architecture notes: [docs/mosaic-intro.md](docs/mosaic-
 User guides in `docs/guides/` have English and Chinese versions, with English as the source of truth. Each reference guide carries the full attribute table, the payload contract and a catalogue of error messages.
 
 - [Mosaic intro](docs/mosaic-intro.md) ([中文](docs/mosaic-intro-zh.md)) — positioning, architecture and roadmap *(English)*
+- [Agent guide installation](docs/guides/agent-guide.md) — opt-in vault-local destinations, update protection and retry behavior
 - [Tag syntax](docs/guides/tag-syntax.md) — rules shared by all tag blocks, row extraction, fall-back-to-source cases
 - [Chart](docs/guides/chart.md) — all three syntaxes, full attribute table, error examples
 - [DataTable](docs/guides/data-table.md) — inline tables or external datasets
@@ -314,6 +317,7 @@ Mosaic is fully local and fully offline:
 - **No telemetry or analytics**, client-side or server-side.
 - **No account, no payment, no ads.** Every feature works out of the box.
 - **No file access outside your vault.** Dataset manifests are resolved relative to the note that references them and read through Obsidian's own vault API.
+- **Agent guide files are opt-in and vault-local.** Mosaic writes only the fixed destination you select, then checks only recorded installations once per plugin load. It does not scan the vault or touch global skill directories.
 - **Clipboard: write-only.** Pressing a copy button writes a report to your clipboard. Mosaic never reads the clipboard, so nothing you copied elsewhere is ever seen.
 - **No code execution.** No SQL, no formula evaluation, no scripts — declarations are parsed, never evaluated.
 
