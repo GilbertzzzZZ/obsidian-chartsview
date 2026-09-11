@@ -10,7 +10,7 @@
 
 **Spec:** 本文「范围与行为契约」承载本次用户需求，不另建一份重复设计稿。正文内容以八篇英文用户指南为权威，维护操作遵守 [[AGENTS|AGENTS.md]]。
 
-**Status:** 用户已确认实施与标准技能入口。自定义文档文件名使用 `Mosaic-Usage-Guide.md`，正文标题保留空格。
+**Status:** 功能代码与阶段审查已完成；最终审查和交付进行中。自定义文档文件名为 `Mosaic-Usage-Guide.md`，正文标题保留空格。未完成的客户端与平台验收在末节单独记录。
 
 ## Global Constraints
 
@@ -182,7 +182,7 @@ class GuideInstaller {
 - Produces：无元数据包装的英文正文，以及 `.md` 导入得到字符串的构建能力。
 - 与 Task 2 独立，可同时实施，双方不修改同一个文件。Task 3 等待两者完成。
 
-- [ ] **Step 1 · 先写读取实际正文的失败测试。** 六类示例必须从 Markdown 文件提取，不能在测试里复制六份另行维护的样例。
+- [x] **Step 1 · 先写读取实际正文的失败测试。** 六类示例必须从 Markdown 文件提取，不能在测试里复制六份另行维护的样例。
 
 ```js
 import test from 'node:test';
@@ -206,9 +206,9 @@ test('the shipped guide contains valid examples for every block', () => {
 });
 ```
 
-- [ ] **Step 2 · 运行失败测试。** `node --test tests/agent-guide-content.test.mjs` 应因正文文件不存在失败，不能因测试导入错误失败。
-- [ ] **Step 3 · 写入英文正文。** 用 `# Mosaic Usage Guide` 为标题，按用途选择、写法、六类示例、外部数据、排错组织，保持无脚本、无本机信息。
-- [ ] **Step 4 · 六个内联示例使用以下最小输入。** 将每个输入写入相应语言的真实代码围栏，不把这段 JavaScript 数组作为分发内容。
+- [x] **Step 2 · 运行失败测试。** `node --test tests/agent-guide-content.test.mjs` 应因正文文件不存在失败，不能因测试导入错误失败。
+- [x] **Step 3 · 写入英文正文。** 用 `# Mosaic Usage Guide` 为标题，按用途选择、写法、六类示例、外部数据、排错组织，保持无脚本、无本机信息。
+- [x] **Step 4 · 六个内联示例使用以下最小输入。** 将每个输入写入相应语言的真实代码围栏，不把这段 JavaScript 数组作为分发内容。
 
 ```js
 const examples = [
@@ -221,7 +221,7 @@ const examples = [
 ];
 ```
 
-- [ ] **Step 5 · 补齐一个完整外部数据例子。** 源文件为 `data/monthly.csv`，清单为 `data/monthly.dataset.json`，示例笔记位于库根。Chart 与 DataTable 的示例均使用 `dataset: data/monthly.dataset.json`，不附内联 body。
+- [x] **Step 5 · 补齐一个完整外部数据例子。** 源文件为 `data/monthly.csv`，清单为 `data/monthly.dataset.json`，示例笔记位于库根。Chart 与 DataTable 的示例均使用 `dataset: data/monthly.dataset.json`，不附内联 body。
 
 ```json
 {
@@ -244,9 +244,9 @@ Date,Amount
 2026-02-01,120
 ```
 
-- [ ] **Step 6 · 补强测试到语义与渲染。** 复用 `tests/helpers/dom.mjs` 与 `loadComponents()`，将正文里提取的六类内联输入交给真实 `createBlockProcessor`。断言 `.mosaic-error` 不存在，并分别存在 `[data-plot]`、`table`、`.mosaic-metric-item`、`.mosaic-timeline-item`、`.mosaic-decision-list`、`svg`。调用捕获的 teardown（卸载回调）清理每个测试块。
-- [ ] **Step 7 · 验证正文里的数据清单。** 从 `## External dataset` 一节提取唯一的 `json` 清单和 `csv` 数据，调用现有两个数据解析函数，断言得到两行、Amount 为 80 和 120。不要用另一份硬编码清单代替分发正文。
-- [ ] **Step 8 · 配置文本打包。** 在生产和测试 esbuild 配置各增加同一条 loader，不引入运行时读包内文件的逻辑。
+- [x] **Step 6 · 补强测试到语义与渲染。** 复用 `tests/helpers/dom.mjs` 与 `loadComponents()`，将正文里提取的六类内联输入交给真实 `createBlockProcessor`。断言 `.mosaic-error` 不存在，并分别存在 `[data-plot]`、`table`、`.mosaic-metric-item`、`.mosaic-timeline-item`、`.mosaic-decision-list`、`svg`。调用捕获的 teardown（卸载回调）清理每个测试块。
+- [x] **Step 7 · 验证正文里的数据清单。** 从 `## External dataset` 一节提取唯一的 `json` 清单和 `csv` 数据，调用现有两个数据解析函数，断言得到两行、Amount 为 80 和 120。不要用另一份硬编码清单代替分发正文。
+- [x] **Step 8 · 配置文本打包。** 在生产和测试 esbuild 配置各增加同一条 loader，不引入运行时读包内文件的逻辑。
 
 ```ts
 // src/markdown.d.ts
@@ -261,7 +261,7 @@ declare module '*.md' {
 loader: { '.md': 'text' },
 ```
 
-- [ ] **Step 9 · 验证并提交该逻辑单元。** 先运行正文测试，再运行 `npm test` 和 `npm run build`。提交信息使用 `feat: bundle concise agent guidance`，正文说明独立指导及真实示例验证；不改版本号。
+- [x] **Step 9 · 验证并提交该逻辑单元。** 先运行正文测试，再运行 `npm test` 和 `npm run build`。提交信息使用 `feat: bundle concise agent guidance`，正文说明独立指导及真实示例验证；不改版本号。
 
 ---
 
@@ -282,7 +282,7 @@ loader: { '.md': 'text' },
 - Consumes：`GuideHost` 与字符串正文，正文可以在测试中直接传入，不依赖 Task 1 的文件存在。
 - Produces：「固定接口」列出的纯函数、类型和 `GuideInstaller`。
 
-- [ ] **Step 1 · 先写策略测试。** 固定标准目录、自定义文件名，以及自动模式不创建缺失文件的行为。
+- [x] **Step 1 · 先写策略测试。** 固定标准目录、自定义文件名，以及自动模式不创建缺失文件的行为。
 
 ```js
 import test from 'node:test';
@@ -313,9 +313,9 @@ test('locally edited files are preserved', () => {
 });
 ```
 
-- [ ] **Step 2 · 运行失败测试。** `node --test tests/agent-guide-policy.test.mjs`，确认缺少实现导致失败。
-- [ ] **Step 3 · 实现路径规则。** 先拒绝绝对路径、盘符、URL scheme（地址协议）、控制字符、`..` 路径段和 `~` 展开写法，再统一分隔符与冗余 `.`。接受空目录为库根。宿主层另拒绝写入实际 `vault.configDir` 及其子目录，不能只硬编码 `.obsidian`。
-- [ ] **Step 4 · 实现内容生成和校验。** 三个目标调用同一个函数，元数据使用插件自身版本，不维护单独递增的技能版本。
+- [x] **Step 2 · 运行失败测试。** `node --test tests/agent-guide-policy.test.mjs`，确认缺少实现导致失败。
+- [x] **Step 3 · 实现路径规则。** 先拒绝绝对路径、盘符、URL scheme（地址协议）、控制字符、`..` 路径段和 `~` 展开写法，再统一分隔符与冗余 `.`。接受空目录为库根。宿主层另拒绝写入实际 `vault.configDir` 及其子目录，不能只硬编码 `.obsidian`。
+- [x] **Step 4 · 实现内容生成和校验。** 三个目标调用同一个函数，元数据使用插件自身版本，不维护单独递增的技能版本。
 
 ```js
 export function renderGuide(body, version) {
@@ -341,13 +341,13 @@ export async function sha256(text) {
 }
 ```
 
-- [ ] **Step 5 · 按固定顺序实施决策。** 自动模式先查安装记录；不存在则 `not-installed`。已有记录版本更高则 `newer`。路径不存在则手动 `write`、自动 `missing`。内容等于预期则 `unchanged`。其余情况下只有实际校验值等于已记录校验值才 `write`，否则 `conflict`。版本比较按三个数值段进行，不按字符串字典序。
-- [ ] **Step 6 · 实现具体文件操作。** 普通可见 Markdown 文件使用 `Vault.create` / `Vault.process`。包含隐藏路径段的技能文件或自定义文档使用 `app.vault.adapter`：首次手动创建使用 `write`，修改现有文件使用其原生 `process`。父目录使用对应接口逐层创建，不通过 `getFiles()` 寻找隐藏文件。
-- [ ] **Step 7 · 将读写保护落到实际写入点。** `Vault.process` 与 `DataAdapter.process` 的同步回调都核对本次读到的原文仍与校验时一致，不一致则抛出冲突。自动模式遇到缺失文件不回退到 `write`。路径处是文件夹或父路径处是文件时报告错误，不清理用户路径。不自行实现临时文件替换、备份目录或第二套原子写入机制。
-- [ ] **Step 8 · 管理状态。** 一次操作只持有一个 `busy` 标志，`finally` 释放。`updateInstalled()` 在同一次操作内逐目标执行，单目标出错仍检查其余目标。默认没有记录时立即返回，不做文件访问。
-- [ ] **Step 9 · 管理记录。** 服务构造时仅收窄新增字段：目标必须是三个已知键、路径符合该目标规范、版本是三段数字、校验值是 64 位十六进制。无效 `guideFolder` 回到空字符串，无效记录不参与自动写入。旧 `showExportBtn` 值保持原样，不重构整套设置读取逻辑。
-- [ ] **Step 10 · 写入后保存。** 新记录为 `{path, version: host.manifest.version, hash: desiredHash}`，替换对应出口记录后 `await host.saveSettings()`。失败时恢复旧内存记录，返回带英文错误消息的结果。不删除已写入文件，不通过删除数据来回滚。
-- [ ] **Step 11 · 测试真实服务调用。** 将 `GuideInstaller` 导出到现有测试打包入口，使用本文件内的 Map（内存映射）构造笔记库替身，记录每次创建、读取、写入与保存。不要创建长期文件系统模拟框架。
+- [x] **Step 5 · 按固定顺序实施决策。** 自动模式先查安装记录；不存在则 `not-installed`。已有记录版本更高则 `newer`。路径不存在则手动 `write`、自动 `missing`。内容等于预期则 `unchanged`。其余情况下只有实际校验值等于已记录校验值才 `write`，否则 `conflict`。版本比较按三个数值段进行，不按字符串字典序。
+- [x] **Step 6 · 实现具体文件操作。** 普通可见 Markdown 文件使用 `Vault.create` / `Vault.process`。包含隐藏路径段的技能文件或自定义文档使用 `app.vault.adapter`：首次手动创建使用 `write`，修改现有文件使用其原生 `process`。父目录使用对应接口逐层创建，不通过 `getFiles()` 寻找隐藏文件。
+- [x] **Step 7 · 将读写保护落到实际写入点。** `Vault.process` 与 `DataAdapter.process` 的同步回调都核对本次读到的原文仍与校验时一致，不一致则抛出冲突。自动模式遇到缺失文件不回退到 `write`。路径处是文件夹或父路径处是文件时报告错误，不清理用户路径。不自行实现临时文件替换、备份目录或第二套原子写入机制。
+- [x] **Step 8 · 管理状态。** 一次操作只持有一个 `busy` 标志，`finally` 释放。`updateInstalled()` 在同一次操作内逐目标执行，单目标出错仍检查其余目标。默认没有记录时立即返回，不做文件访问。
+- [x] **Step 9 · 管理记录。** 服务构造时仅收窄新增字段：目标必须是三个已知键、路径符合该目标规范、版本是三段数字、校验值是 64 位十六进制。无效 `guideFolder` 回到空字符串，无效记录不参与自动写入。旧 `showExportBtn` 值保持原样，不重构整套设置读取逻辑。
+- [x] **Step 10 · 写入后保存。** 新记录为 `{path, version: host.manifest.version, hash: desiredHash}`，替换对应出口记录后 `await host.saveSettings()`。失败时恢复旧内存记录，返回带英文错误消息的结果。不删除已写入文件，不通过删除数据来回滚。
+- [x] **Step 11 · 测试真实服务调用。** 将 `GuideInstaller` 导出到现有测试打包入口，使用本文件内的 Map（内存映射）构造笔记库替身，记录每次创建、读取、写入与保存。不要创建长期文件系统模拟框架。
 
 ```js
 import test from 'node:test';
@@ -422,8 +422,8 @@ test('only explicit installation creates a guide', async () => {
 });
 ```
 
-- [ ] **Step 12 · 覆盖维护边界。** 为首次安装、重复点击、新版本更新、已有同名文件、正文改动、改名/删除、较新记录、一个出口写入失败、设置保存失败、目录切换成功/失败、卸载期间暂停各写一条行为测试。断言真实文件内容和旧记录未被破坏，不只断言状态文案。
-- [ ] **Step 13 · 验证并提交。** 执行 `node --test tests/agent-guide-policy.test.mjs tests/agent-guide-installation.test.mjs`，再执行 `npm test`、`npm run build`。提交信息使用 `feat: manage installed agent guidance`，正文说明显式安装、更新保护及失败隔离。
+- [x] **Step 12 · 覆盖维护边界。** 为首次安装、重复点击、新版本更新、已有同名文件、正文改动、改名/删除、较新记录、一个出口写入失败、设置保存失败、目录切换成功/失败、卸载期间暂停各写一条行为测试。断言真实文件内容和旧记录未被破坏，不只断言状态文案。
+- [x] **Step 13 · 验证并提交。** 执行 `node --test tests/agent-guide-policy.test.mjs tests/agent-guide-installation.test.mjs`，再执行 `npm test`、`npm run build`。提交信息使用 `feat: manage installed agent guidance`，正文说明显式安装、更新保护及失败隔离。
 
 ---
 
@@ -445,7 +445,7 @@ test('only explicit installation creates a guide', async () => {
 - Produces：`MosaicPlugin.guideInstaller`、`guideFolder: string`、`guideInstalls: GuideInstalls` 和设置操作。
 - 依赖 Task 1 与 Task 2 完成，不与它们并行修改共享测试文件。
 
-- [ ] **Step 1 · 为真实设置定义写失败测试。** 从测试打包入口导出 `MosaicSettingTab`，调用 `getSettingDefinitions()`，驱动返回设置行的 `render` 回调。用可记录按钮文字和回调的 `Setting` 替身点击按钮，断言调用正确目标。
+- [x] **Step 1 · 为真实设置定义写失败测试。** 从测试打包入口导出 `MosaicSettingTab`，调用 `getSettingDefinitions()`，驱动返回设置行的 `render` 回调。用可记录按钮文字和回调的 `Setting` 替身点击按钮，断言调用正确目标。
 
 ```js
 import test from 'node:test';
@@ -499,9 +499,9 @@ test('install buttons target the correct client without rebuilding notes', async
 });
 ```
 
-- [ ] **Step 2 · 运行失败测试。** `node --test tests/agent-guide-settings.test.mjs`，确认缺少新字段或控件而失败。
-- [ ] **Step 3 · 增加设置字段。** 默认 `guideFolder: ''`、`guideInstalls: {}`，每个实例创建独立的安装记录对象。读取旧版只带 `showExportBtn` 的设置必须成功。
-- [ ] **Step 4 · 接入声明式按钮与文件夹输入。** 在 `MosaicSettingTab` 增加 `installAndRefresh(target)`：调用服务、显示一次结果提示、刷新设置状态，并捕获错误。该方法不重建笔记预览。
+- [x] **Step 2 · 运行失败测试。** `node --test tests/agent-guide-settings.test.mjs`，确认缺少新字段或控件而失败。
+- [x] **Step 3 · 增加设置字段。** 默认 `guideFolder: ''`、`guideInstalls: {}`，每个实例创建独立的安装记录对象。读取旧版只带 `showExportBtn` 的设置必须成功。
+- [x] **Step 4 · 接入声明式按钮与文件夹输入。** 在 `MosaicSettingTab` 增加 `installAndRefresh(target)`：调用服务、显示一次结果提示、刷新设置状态，并捕获错误。该方法不重建笔记预览。
 
 ```ts
 {
@@ -532,8 +532,8 @@ test('install buttons target the correct client without rebuilding notes', async
 },
 ```
 
-- [ ] **Step 5 · 显示状态。** 设置描述以服务的 `results` 和已保存记录生成，按钮操作开始和结束都刷新界面。安装成功显示相对文件路径，不能声称智能体已经加载。自定义文档提示为 `Ask your agent to read this file before creating Mosaic content.`。
-- [ ] **Step 6 · 接入加载和卸载。** Markdown 文本静态打进发布包，服务不在启动时读取插件目录里的附加资源。
+- [x] **Step 5 · 显示状态。** 设置描述以服务的 `results` 和已保存记录生成，按钮操作开始和结束都刷新界面。安装成功显示相对文件路径，不能声称智能体已经加载。自定义文档提示为 `Ask your agent to read this file before creating Mosaic content.`。
+- [x] **Step 6 · 接入加载和卸载。** Markdown 文本静态打进发布包，服务不在启动时读取插件目录里的附加资源。
 
 ```ts
 import guideBody from './agent-guide/mosaic.md';
@@ -550,8 +550,8 @@ void guideInstaller.updateInstalled();
 this.guideInstaller?.dispose();
 ```
 
-- [ ] **Step 7 · 做接线测试。** 使用插件类和最小宿主替身调用 `onload()`，捕获布局回调，证明布局就绪前未检查指导、就绪后恰好检查一次，原内容块注册照常发生。调用 `onunload()` 后证明旧服务不再继续新写入。
-- [ ] **Step 8 · 验证并提交。** 新设置测试全绿后运行 `npm test`、`npm run build`，确认 `.md` 进入 `main.js` 且没有第四个发布附件。提交信息使用 `feat: add agent guide install controls`。
+- [x] **Step 7 · 做接线测试。** 使用插件类和最小宿主替身调用 `onload()`，捕获布局回调，证明布局就绪前未检查指导、就绪后恰好检查一次，原内容块注册照常发生。调用 `onunload()` 后证明旧服务不再继续新写入。
+- [x] **Step 8 · 验证并提交。** 新设置测试全绿后运行 `npm test`、`npm run build`，确认 `.md` 进入 `main.js` 且没有第四个发布附件。提交信息使用 `feat: add agent guide install controls`。
 
 ---
 
@@ -572,17 +572,17 @@ this.guideInstaller?.dispose();
 - Consumes：Task 1–3 的完整安装流程与稳定文件命名。
 - Produces：用户指南、宿主验收记录、真实测试数量与完成状态。
 
-- [ ] **Step 1 · 写用户说明。** 英文先行、中文镜像，说明三个出口、库内目录范围、自动更新时机、正文改动暂停更新、改名/删除不重建、设置保存失败如何重试。
-- [ ] **Step 2 · 写最小设计说明。** 在总体设计中补充指导分发独立于渲染管线、一份正文三个出口、选择校验后替换而不做合并的理由，不复述用户操作步骤。
-- [ ] **Step 3 · 更新项目入口。** README 双语增加新指南链接，公开说明只按用户选择写入当前库内的固定文件，不新增网络访问或遥测。AGENTS 记录源稿位置和内容测试门槛，不新增一份来源映射表。
-- [ ] **Step 4 · 核验双语与源码。** 对比双语指南中的路径、按钮标签和示例字节，确认正文只维护一份，没有第二份生成逻辑。
-- [ ] **Step 5 · 在独立测试笔记库验证三个出口。** 分别点击 Agents、Claude、Write guide，检查实际文件、状态、重复点击和按内容保护。安装 Agents 和 Claude 后同时保留两份，不自动清理其中任何一份。
-- [ ] **Step 6 · 验证升级和撤销。** 在测试库用夹具生成较旧版本的指导内容及其有效安装记录，再加载本次构建，确认未修改的文件更新，不要求不存在的旧版插件具有安装功能。分别编辑正文、改名、删除文件，再重载插件，确认没有覆盖或重建。故意让一个目录不可写，确认另一个目标仍能更新，图表仍正常。
+- [x] **Step 1 · 写用户说明。** 英文先行、中文镜像，说明三个出口、库内目录范围、自动更新时机、正文改动暂停更新、改名/删除不重建、设置保存失败如何重试。
+- [x] **Step 2 · 写最小设计说明。** 在总体设计中补充指导分发独立于渲染管线、一份正文三个出口、选择校验后替换而不做合并的理由，不复述用户操作步骤。
+- [x] **Step 3 · 更新项目入口。** README 双语增加新指南链接，公开说明只按用户选择写入当前库内的固定文件，不新增网络访问或遥测。AGENTS 记录源稿位置和内容测试门槛，不新增一份来源映射表。
+- [x] **Step 4 · 核验双语与源码。** 对比双语指南中的路径、按钮标签和示例字节，确认正文只维护一份，没有第二份生成逻辑。
+- [x] **Step 5 · 在独立测试笔记库验证三个出口。** 分别点击 Agents、Claude、Write guide，检查实际文件、状态、重复点击和按内容保护。安装 Agents 和 Claude 后同时保留两份，不自动清理其中任何一份。
+- [x] **Step 6 · 验证升级和撤销。** 在测试库用夹具生成较旧版本的指导内容及其有效安装记录，再加载本次构建，确认未修改的文件更新，不要求不存在的旧版插件具有安装功能。分别编辑正文、改名、删除文件，再重载插件，确认没有覆盖或重建。故意让一个目录不可写，确认另一个目标仍能更新，图表仍正常。
 - [ ] **Step 7 · 验证真实客户端发现。** 在测试库根目录启动 Codex 与 Claude Code 的新会话，分别确认技能 `mosaic` 被发现并可显式调用。没有登录或没有客户端时如实记录未验证，不能用文件存在代替此项成功。
-- [ ] **Step 8 · 验证指导可用性。** 给每个可用客户端仅提供该指导和同一份虚构数据，请其生成六类内容块。对产出运行现有解析/渲染验证，检查无未知属性、错误框和虚构字段。验收使用模拟数据，不上传用户笔记。
+- [x] **Step 8 · 验证指导可用性。** 给每个可用客户端仅提供该指导和同一份虚构数据，请其生成六类内容块。对产出运行现有解析/渲染验证，检查无未知属性、错误框和虚构字段。验收使用模拟数据，不上传用户笔记。
 - [ ] **Step 9 · 验证自定义文档模式。** 将 `Mosaic-Usage-Guide.md` 的路径明确交给一个测试会话，确认无需开发仓库即可生成合法内容块，不将这个测试报告为自动发现。
 - [ ] **Step 10 · 执行完整门槛。** `npm test`、`npm run build`，检查 `main.js` 仍低于 1,843,200 字节。Node 22 / 24 的既有持续集成保持通过，不追加独立流水线。
-- [ ] **Step 11 · 如实记录平台范围。** 已执行的 Linux、macOS、Windows、移动端测试分别列出。尚未执行的平台不标为通过，不能仅凭 `isDesktopOnly: false` 声称已经验证移动端。
+- [x] **Step 11 · 如实记录平台范围。** 已执行的 Linux、macOS、Windows、移动端测试分别列出。尚未执行的平台不标为通过，不能仅凭 `isDesktopOnly: false` 声称已经验证移动端。
 - [ ] **Step 12 · 文档提交与完整审查。** 文档提交信息使用 `docs: explain agent guide installation`，随后执行 review（代码审查），修复实际问题并复测。完成后归档本计划，记录最终提交与被修正的设计项。
 
 ---
@@ -620,3 +620,24 @@ this.guideInstaller?.dispose();
 - [Codex 技能格式与目录](https://learn.chatgpt.com/docs/build-skills)：技能目录使用 `SKILL.md`，项目目录为 `.agents/skills`。
 - [Claude Code 技能格式与目录](https://code.claude.com/docs/en/skills)：项目目录为 `.claude/skills`，技能入口使用 `SKILL.md`。
 - 本节外部文档核验日期：2026-09-10。客户端发现支持以真实客户端验收为准。
+
+---
+
+## 实施验收（2026-09-11）
+
+> 代码、宿主操作与客户端发现分别记录，未执行项不视为通过。
+
+- **已实现：** 三个安装出口、一份英文正文、按内容校验的自动维护、声明式设置与卸载控制、中英文用户说明。
+- **命名：** `mosaic/SKILL.md` 为技能入口，普通文档固定为 `Mosaic-Usage-Guide.md`。
+- **阶段审查：** 正文、安装服务、设置接入均经独立审查与必要修复后通过。
+- **修复项：** 非法目录转为可显示的错误结果；卸载后不开始保存安装记录；删除无用的设置索引签名；错误提示同时包含操作类型、目标路径和原因。
+- **本地验证：** Node 26.8.2，386 项测试通过，生产构建通过，包体积 1,671,095 字节，低于 1,843,200 字节限制。
+- **真实宿主：** Linux、Obsidian 1.13.7。三个可见按钮、原生目录输入与库根选择、重复点击不重写、旧版指导重载更新、修改保护、改名及删除后不重建、Unicode 目录、实际权限错误隔离均通过。
+- **实际渲染：** Codex 根据安装指导生成六类内容块，`.md` 与 `.mdx` 均显示一个图表及其余五类内容，无错误框或字段提示。
+- **Codex：** 0.154.0 的技能清单返回 `mosaic`，仓库作用域且已启用；通过 `$mosaic` 调用生成的六类内容通过解析与渲染校验。
+- **普通文档内容：** 将实际安装文档作为附件交给新会话，生成的图表通过解析与渲染校验。这不代表按路径读取已经通过。
+- **未验证：** Claude Code 2.1.267 未登录，尚未验证发现与真实调用。
+- **未验证：** 普通文档的按路径客户端读取受执行环境权限错误阻断；没有提高子进程权限绕过。
+- **未验证：** macOS、Windows、移动端实际运行。保留移动端兼容声明不代表移动端已经验收。
+- **持续集成：** Node 22 / 24 的远端结果待交付时记录。
+- **发版：** 本次未修改版本号，不打标签、不发布版本。
