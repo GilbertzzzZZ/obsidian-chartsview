@@ -3,9 +3,12 @@ import { MosaicPluginSettings, MosaicSettingTab, DEFAULT_SETTINGS } from './sett
 import { createChartTagProcessor } from './entry/chart-tag-processor';
 import { createBlockProcessor } from './entry/block-processor';
 import { BLOCK_LANGUAGES } from './parse/chart-tag.mjs';
+import guideBody from './agent-guide/mosaic.md';
+import { GuideInstaller } from './agent-guide/installer';
 
 export default class MosaicPlugin extends Plugin {
 	declare settings: MosaicPluginSettings;
+	declare guideInstaller: GuideInstaller;
 	private cssChangeTimer: number | undefined;
 	// 已挂载、尚未卸载的渲染子项的 teardown。这些 child 由预览视图（ctx.addChild）
 	// 持有：只有预览丢弃 section 时才 unload，禁用插件时不会。插件必须自己留一份
@@ -49,6 +52,8 @@ export default class MosaicPlugin extends Plugin {
 		// 同一实例被卸载后再次 load 时复位，否则处理器会一直拒绝渲染。
 		this.isUnloading = false;
 		await this.loadSettings();
+		const guideInstaller = new GuideInstaller(this, guideBody);
+		this.guideInstaller = guideInstaller;
 		this.addSettingTab(new MosaicSettingTab(this.app, this));
 		// 六个语言名（组件名转小写）+ 历史别名 chartview，映射表由 BLOCK_LANGUAGES
 		// 唯一持有：加一类内容块只改 COMPONENT_NAMES 一处，这里跟着长出来。
@@ -63,7 +68,10 @@ export default class MosaicPlugin extends Plugin {
 
 		// Sections rendered while this plugin was disabled keep their vanilla
 		// (chart-less) HTML forever; force open previews through the processor once.
-		this.app.workspace.onLayoutReady(() => this.rerenderOpenPreviews());
+		this.app.workspace.onLayoutReady(() => {
+			this.rerenderOpenPreviews();
+			void guideInstaller.updateInstalled();
+		});
 		// Theme switches must NOT re-render markdown (races with reading-view
 		// virtualization and leaves vanilla sections). Broadcast instead; every
 		// mounted ChartFigure rebuilds itself with the current theme. Debounced
@@ -85,6 +93,7 @@ export default class MosaicPlugin extends Plugin {
 	}
 
 	onunload() {
+		this.guideInstaller?.dispose();
 		// 先置位，再做任何可能触发重渲染的事。
 		this.isUnloading = true;
 		window.clearTimeout(this.cssChangeTimer);
@@ -110,7 +119,11 @@ export default class MosaicPlugin extends Plugin {
 		// 在这里收窄成「设置项的一个子集」：缺的字段由 DEFAULT_SETTINGS 补齐，
 		// 多出来的字段照旧带着走，与 Object.assign 原本的行为一致。
 		const saved = (await this.loadData()) as Partial<MosaicPluginSettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
+		const guideInstalls =
+			saved?.guideInstalls && typeof saved.guideInstalls === "object"
+				? { ...saved.guideInstalls }
+				: {};
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, saved, { guideInstalls });
 	}
 
 	async saveSettings() {

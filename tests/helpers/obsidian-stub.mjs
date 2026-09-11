@@ -14,6 +14,13 @@ export function normalizePath(path) {
 }
 
 export class Component {
+	constructor() {
+		this.registeredEvents = [];
+	}
+	registerEvent(event) {
+		this.registeredEvents.push(event);
+		return event;
+	}
 	onunload() {}
 	onload() {}
 }
@@ -23,11 +30,45 @@ export class MarkdownRenderChild extends Component {
 		this.containerEl = containerEl;
 	}
 }
-export class Plugin extends Component {}
+export class Plugin extends Component {
+	constructor(app, manifest = { version: "1.1.6" }) {
+		super();
+		this.app = app;
+		this.manifest = manifest;
+		this.data = null;
+		this.savedData = [];
+		this.settingTabs = [];
+		this.codeBlockProcessors = [];
+		this.postProcessors = [];
+		this.extensions = [];
+	}
+	async loadData() {
+		return this.data;
+	}
+	async saveData(data) {
+		this.savedData.push(data);
+	}
+	addSettingTab(tab) {
+		this.settingTabs.push(tab);
+	}
+	registerMarkdownCodeBlockProcessor(language, processor) {
+		this.codeBlockProcessors.push({ language, processor });
+	}
+	registerMarkdownPostProcessor(processor) {
+		this.postProcessors.push(processor);
+	}
+	registerExtensions(extensions, viewType) {
+		this.extensions.push({ extensions, viewType });
+	}
+}
 export class PluginSettingTab {
 	constructor(app, plugin) {
 		this.app = app;
 		this.plugin = plugin;
+		this.updateCalls = 0;
+	}
+	update() {
+		this.updateCalls++;
 	}
 }
 export class Setting {
@@ -46,3 +87,11 @@ export class MarkdownView {}
 export class TFile {}
 export class App {}
 export class WorkspaceLeaf {}
+
+export class Notice {
+	static messages = [];
+	constructor(message) {
+		this.message = String(message);
+		Notice.messages.push(this.message);
+	}
+}
