@@ -21,6 +21,7 @@ export async function loadComponents() {
 		target: "es2017",
 		write: false,
 		logLevel: "silent",
+		loader: { ".md": "text" },
 		alias: {
 			obsidian: join(here, "obsidian-stub.mjs"),
 			"@ant-design/plots": join(here, "plots-stub.mjs"),

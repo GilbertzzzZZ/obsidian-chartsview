@@ -24,6 +24,7 @@ const context = await esbuild.context({
 	logLevel: 'info',
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
+	loader: { '.md': 'text' },
 	// G2 的 fetch 数据源要靠 d3-dsv 解析 CSV，而 d3-dsv 是用 new Function 拼行转换器
 	// 的。Mosaic 走不到那条路（数据在进 G2 之前已经是内存数组），换成抛错替身，
 	// 动态代码求值就不会出现在发布产物里。理由见 scripts/stub-d3-dsv.mjs。
