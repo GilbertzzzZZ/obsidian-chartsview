@@ -26,7 +26,7 @@
 - **Two ways to write every block** — a tag (`<Chart …>`) or a code block (```` ```chart ````). Same result, so pick whichever survives your editing style.
 - **Your data stays where it is** — inline CSV, JSON or a Markdown table in the note, or an external `.dataset.json` manifest elsewhere in the vault.
 - **Errors never break the page** — a bad block renders one inline error box with the exact line range; the rest of the note renders normally.
-- **Nothing leaves your vault** — no network, no telemetry, no account, no code execution.
+- **Nothing is sent anywhere** — no network, no telemetry, no account, no code execution. Optional desktop global skill imports are local file writes that require an explicit opt-in.
 
 <p align="center">
   <img src="docs/_assets/readme-blocks.png" alt="MetricGrid and Timeline blocks" width="760" />
@@ -61,7 +61,7 @@
 
 **Manual**: download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/GilbertzzzZZ/obsidian-mosaic/releases/latest), copy them into `<vault>/.obsidian/plugins/mosaic/`, then enable **Mosaic** in Settings → Community plugins.
 
-**Optional agent guidance**: Mosaic's settings can write the same concise usage guide to fixed Agents, Claude, or custom-document locations inside the current vault. This happens only after you choose a destination. See [Install the Mosaic agent guide](docs/guides/agent-guide.md).
+**Optional agent guidance**: Mosaic's settings can import a complete, independently usable authoring reference as a skill or an ordinary Markdown guide. The default scope is the current vault; desktop users can explicitly opt in to a global skill destination under their user home. See [Import Mosaic guidance](docs/guides/agent-guide.md).
 
 ## Quick start
 
@@ -295,7 +295,7 @@ Detailed positioning and architecture notes: [docs/mosaic-intro.md](docs/mosaic-
 User guides in `docs/guides/` have English and Chinese versions, with English as the source of truth. Each reference guide carries the full attribute table, the payload contract and a catalogue of error messages.
 
 - [Mosaic intro](docs/mosaic-intro.md) ([中文](docs/mosaic-intro-zh.md)) — positioning, architecture and roadmap *(English)*
-- [Agent guide installation](docs/guides/agent-guide.md) — opt-in vault-local destinations, update protection and retry behavior
+- [Agent guidance import](docs/guides/agent-guide.md) — skill and ordinary-guide destinations, desktop global opt-in, update protection and retry behavior
 - [Tag syntax](docs/guides/tag-syntax.md) — rules shared by all tag blocks, row extraction, fall-back-to-source cases
 - [Chart](docs/guides/chart.md) — all three syntaxes, full attribute table, error examples
 - [DataTable](docs/guides/data-table.md) — inline tables or external datasets
@@ -316,8 +316,9 @@ Mosaic is fully local and fully offline:
 - **No network requests.** Nothing is fetched, uploaded or phoned home.
 - **No telemetry or analytics**, client-side or server-side.
 - **No account, no payment, no ads.** Every feature works out of the box.
-- **No file access outside your vault.** Dataset manifests are resolved relative to the note that references them and read through Obsidian's own vault API.
-- **Agent guide files are opt-in and vault-local.** Mosaic writes only the fixed destination you select, then checks only recorded installations once per plugin load. It does not scan the vault or touch global skill directories.
+- **Content data stays inside your vault.** Dataset manifests are resolved relative to the note that references them and read through Obsidian's own vault API.
+- **Optional desktop global skill access.** Skill imports default to the current vault. If you enable `Global` and then click a skill import button, Mosaic writes the selected `mosaic/SKILL.md` outside the vault under the current user's home or another directory you choose. It subsequently checks that recorded destination once per plugin load so it can update only an unchanged file it owns. Global scope, directory choice and installation records are device-local to the current vault and are not synchronized. Mobile never accesses global skill files.
+- **No global client configuration changes.** Importing guidance does not edit an agent client's configuration, launch an agent, create a symbolic link or scan for other files.
 - **Clipboard: write-only.** Pressing a copy button writes a report to your clipboard. Mosaic never reads the clipboard, so nothing you copied elsewhere is ever seen.
 - **No code execution.** No SQL, no formula evaluation, no scripts — declarations are parsed, never evaluated.
 

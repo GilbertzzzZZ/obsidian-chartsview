@@ -28,7 +28,7 @@
 - **每类都有两种写法**——标签（`<Chart …>`）或代码块（```` ```chart ````）。结果完全一致，挑一种能在你的编辑习惯下活下来的即可。
 - **数据留在原地**——笔记里的内联 CSV、JSON、Markdown 表格，或者 vault 里别处的 `.dataset.json` manifest。
 - **报错不会毁掉整页**——写坏的块只渲染一个内联错误框，附带准确的行号范围，笔记其余部分照常渲染。
-- **数据不出 vault**——无网络请求、无遥测、无账号、不执行代码。
+- **数据不会发送到任何地方**——无网络请求、无遥测、无账号、不执行代码。可选的桌面端全局 skill 导入是本地文件写入，必须由用户明确启用。
 
 <p align="center">
   <img src="_assets/readme-blocks.png" alt="MetricGrid 与 Timeline 区块" width="760" />
@@ -63,7 +63,7 @@
 
 **手动安装**：从 [最新 release](https://github.com/GilbertzzzZZ/obsidian-mosaic/releases/latest) 下载 `main.js`、`manifest.json` 与 `styles.css`，拷进 `<vault>/.obsidian/plugins/mosaic/`，然后在 设置 → 第三方插件 中启用 **Mosaic**。
 
-**可选 agent 指导**：Mosaic 设置可以把同一份精简用法指导写入当前 vault 内固定的 Agents、Claude 或自定义文档位置。只有用户选择目标后才会写入，详见[安装 Mosaic agent 指导](guides/agent-guide-zh.md)。
+**可选 agent 指导**：Mosaic 设置可以把完整且能独立使用的创作参考导入为 skill（技能）或普通 Markdown 指南。默认范围是当前 vault；桌面端用户可以明确选择用户主目录下的全局 skill 目标。详见[导入 Mosaic 指导](guides/agent-guide-zh.md)。
 
 ## 快速上手
 
@@ -297,7 +297,7 @@ c,Resolve,end,
 `docs/guides/` 中的用户指南提供中英文版本，以英文为准。各篇参考指南都带完整属性表、payload 契约与报错清单。
 
 - [Mosaic intro 中文版](mosaic-intro-zh.md)（[English](mosaic-intro.md) 为准）——定位、架构与 Roadmap
-- [Agent 指导安装](guides/agent-guide-zh.md)——主动选择的 vault 内目标、更新保护与重试方式
+- [Agent 指导导入](guides/agent-guide-zh.md)——skill 与普通指南目标、桌面端全局 opt-in（主动选择）、更新保护与重试方式
 - [标签写法通则](guides/tag-syntax-zh.md)——所有标签共用的写法规则、行提取、按原文渲染的情形
 - [Chart](guides/chart-zh.md)——三种写法、完整属性表、报错示例
 - [DataTable](guides/data-table-zh.md)——内联表格或外部数据集
@@ -318,8 +318,9 @@ Mosaic 完全本地、完全离线：
 - **无网络请求。** 不抓取、不上传、不回传任何东西。
 - **无遥测、无分析**，客户端与服务端都没有。
 - **无账号、无付费、无广告。** 所有功能开箱即用。
-- **不访问 vault 之外的文件。** 数据集 manifest 相对引用它的笔记解析，并通过 Obsidian 自己的 vault API 读取。
-- **Agent 指导文件由用户主动选择，并且只写在 vault 内。** Mosaic 只写入用户选择的固定目标，随后每次插件加载只检查已有安装记录。插件不扫描 vault，也不接触全局 skill 目录。
+- **内容数据留在 vault 内。** 数据集 manifest 相对引用它的笔记解析，并通过 Obsidian 自己的 vault API 读取。
+- **可选的桌面端全局 skill 访问。** Skill 导入默认使用当前 vault。打开 `Global` 并点击 skill 导入按钮后，Mosaic 会把所选 `mosaic/SKILL.md` 写到 vault 外的当前用户主目录下，或用户选择的其他目录。随后每次插件加载只检查该记录目标一次，以便仅更新仍由插件管理且未经修改的文件。全局范围、目录选择与安装记录按当前 vault 保存在本设备，不参与同步。移动端从不访问全局 skill 文件。
+- **不修改全局客户端配置。** 导入指导不会编辑 agent 客户端配置、启动 agent、创建符号链接或扫描其他文件。
 - **剪贴板只写不读。** 按下复制按钮才会把报告写进剪贴板；Mosaic 从不读取剪贴板，你在别处复制的东西它一概看不到。
 - **不执行代码。** 无 SQL、无公式求值、无脚本——声明只被解析，绝不被执行。
 

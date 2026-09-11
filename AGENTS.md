@@ -41,7 +41,7 @@ Mosaic 是 Obsidian 社区插件（plugin id `mosaic`，GitHub `GilbertzzzZZ/obs
 
 按顺序走，全过才算做完：
 
-1. `npm test`——387 条全绿，挂一条都不算完。
+1. `npm test`——423 条全绿，挂一条都不算完。
 2. `npm run build`——tsc typecheck 与 esbuild production 都要过。
 3. **行为变了就同步文档**：怎么用变了改 `docs/guides/`，为什么这么定变了改 `docs/design/`。两边都要看一眼，不要只改一边。
 4. 单元测试验不了的（画出来什么样、宿主行为、错误框出现在哪）才进测试 vault，纯函数能验的一律不放。
@@ -141,7 +141,7 @@ npm run install:vault  # build + 按 MOSAIC_PLUGIN_DIR 拷三件套到测试 vau
 
 - 测试 vault 是一个**独立的本地 git 仓库**，不是本仓库的子目录，也不被本仓库跟踪；`npm run install:vault` 按 `MOSAIC_PLUGIN_DIR` 环境变量部署三件套。不要用日常使用的 vault 做测试。
 - 改测试库前先 `git status` 看清工作区；写坏了 `git checkout` 就能回退，不需要手工备份。`.obsidian/` 不进 git（宿主状态，随每次部署和插件开关而变）。
-- **只放单元测试验不了的东西**。387 条单测已覆盖纯函数层（解析产物、配置对象、错误文案），这里验的是：画出来什么样、换写法结果一不一致、宿主行为、错误框出现在哪、给人看的效果。纯函数能验的一律不放——别名链就是反例，`tests/payload.test.mjs` 已有三条 `alias chain fallbacks`。
+- **只放单元测试验不了的东西**。423 条单测已覆盖纯函数层（解析产物、配置对象、错误文案），这里验的是：画出来什么样、换写法结果一不一致、宿主行为、错误框出现在哪、给人看的效果。纯函数能验的一律不放——别名链就是反例，`tests/payload.test.mjs` 已有三条 `alias chain fallbacks`。
 - **一份文件 = 一条可验证的断言，文件名说清验什么，不用编号**。六个类型目录下是能力名（`line.md` / `granularity.md` / `payload-forms.md` / `errors.md` …）。
 - **同一能力的所有写法放在同一份文件里**，小节标题固定 `## 代码块 · 内联` / `## 代码块 · 外部` / `## 标签 · 内联` / `## 标签 · 外部`，四段画同一张图——等价性验证是一屏之内的视觉对照，不是跨文件记忆对照。只有 Chart 与 DataTable 有四段，其余四类只有 `## 代码块` 与 `## 标签`（外部数据只这两类支持）。
 - `host-behavior/` 验宿主而非某个类型（主题切换、虚拟化与宽度、段落接管、插件启停）；`cases/` 是四篇模拟场景报告，效果呈现，写法刻意混杂且每篇留两处故意写错；`_assets/` 是数据文件；`_readme/` 是 README 截图专用页。
@@ -162,7 +162,7 @@ npm run install:vault  # build + 按 MOSAIC_PLUGIN_DIR 拷三件套到测试 vau
 
 - 官方规范原文归档在 [docs/policies/](docs/policies/)，四篇均带 `obsidian-` 前缀：developer-policies、submission-requirements、plugin-guidelines、plugin-self-critique-checklist。改 UI/设置页/manifest 前先对照。
 - 发版操作步骤在 [docs/engineering/publishing-to-obsidian.md](docs/engineering/publishing-to-obsidian.md)。注意官方流程已改版：提交社区目录走 community.obsidian.md，**不再向 obsidian-releases 提 PR**。
-- 已达成并必须保持：无 console 噪音、无 innerHTML、无网络请求、无遥测、bundle 里无 `eval` / `new Function`、UI 文案英文 sentence case、设置页无标题且走声明式 API（`getSettingDefinitions`，不留 `display()`）、build 必过 typecheck、`main.js` 不进 git。
+- 已达成并必须保持：无 console 噪音、无 innerHTML、无网络请求、无遥测、bundle 里无 `eval` / `new Function`、UI 文案英文 sentence case、设置页无顶级标题，仅通过声明式 API（`getSettingDefinitions`，不留 `display()`）提供原生分组标题 `Import skill` 与 `Import guides`、desktop-only（仅桌面端）宿主模块必须经过平台守卫后动态加载、build 必过 typecheck、`main.js` 不进 git。
 - 审核结果里的 **Source code** 一节，是目录方用它自己那套 typescript-eslint 跑出来的，不是本仓库的 lint。**不要为了复现它把 lint 工具链装进本仓库**：`typescript-eslint` 的 peer 是 `typescript >=4.8.4 <6.1.0`，而本仓库用 TS 7——装它就得降 TypeScript 主版本；`eslint-plugin-obsidianmd` 的 peer 还锁死 `obsidian: 1.8.7`。更不要把 lint 挂进 `build`：目录审核靠 `npm run build` 做 byte-for-byte 复现，lint 一红，整次扫描就没有结果。要核对就在仓库外建一次性环境，跑完即弃。
 
 ## Git 规则
