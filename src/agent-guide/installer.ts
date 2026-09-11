@@ -31,7 +31,6 @@ export interface GuideHost {
 	settings: {
 		guideFolder: string;
 		guideInstalls: GuideInstalls;
-		[key: string]: unknown;
 	};
 	saveSettings(): Promise<void>;
 }
@@ -126,10 +125,20 @@ export class GuideInstaller {
 	}
 
 	async install(target: GuideTarget): Promise<GuideResult> {
-		const path = guideTargetPath(
-			target,
-			target === "custom" ? this.host.settings.guideFolder : "",
-		);
+		let path = "";
+		try {
+			path = guideTargetPath(
+				target,
+				target === "custom" ? this.host.settings.guideFolder : "",
+			);
+		} catch (error) {
+			return this.remember({
+				target,
+				path,
+				status: "error",
+				message: error instanceof Error ? error.message : String(error),
+			});
+		}
 		if (this.busy) return this.remember({ target, path, status: "busy" });
 		if (this.disposed) {
 			return this.remember({
@@ -221,6 +230,7 @@ export class GuideInstaller {
 					await this.createFile(path, hidden, desired);
 				}
 			}
+			this.assertActive();
 
 			const nextRecord = {
 				path,

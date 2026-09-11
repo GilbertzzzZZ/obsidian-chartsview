@@ -16,6 +16,7 @@ function createHost({
 	configDir = ".obsidian",
 	processFailure,
 	beforeProcess,
+	beforeWrite,
 	saveFailure,
 	beforeRead,
 } = {}) {
@@ -55,6 +56,7 @@ function createHost({
 		},
 		async write(path, value) {
 			if (!folders.has(parent(path))) throw new Error("Parent not found");
+			if (beforeWrite) await beforeWrite(path);
 			files.set(path, value);
 			stats.fileWrites++;
 			stats.adapterWrites++;
@@ -411,4 +413,45 @@ test("an edit between validation and the atomic callback wins the race", async (
 	assert.equal(files.get(path), "# User edit during update");
 	assert.deepEqual(host.settings.guideInstalls.agents, record);
 	assert.equal(stats.fileWrites, 0);
+});
+
+test("a runtime-invalid custom folder returns and records an English error", async () => {
+	const { host } = createHost();
+	const installer = new GuideInstaller(host, "# Guide");
+	host.settings.guideFolder = "../Outside";
+
+	const result = await installer.install("custom");
+
+	assert.equal(result.status, "error");
+	assert.equal(result.path, "");
+	assert.match(result.message, /vault-relative path/);
+	assert.deepEqual(installer.results.custom, result);
+});
+
+test("dispose while a create is pending prevents saving its installation record", async () => {
+	let releaseWriteStarted;
+	const writeStarted = new Promise((resolve) => {
+		releaseWriteStarted = resolve;
+	});
+	let continueWrite;
+	const writeBlocked = new Promise((resolve) => {
+		continueWrite = resolve;
+	});
+	const { files, host, stats } = createHost({
+		beforeWrite: async () => {
+			releaseWriteStarted();
+			await writeBlocked;
+		},
+	});
+	const installer = new GuideInstaller(host, "# Guide");
+	const installing = installer.install("agents");
+	await writeStarted;
+	installer.dispose();
+	continueWrite();
+	const result = await installing;
+
+	assert.equal(result.status, "error");
+	assert.equal(files.has(".agents/skills/mosaic/SKILL.md"), true);
+	assert.deepEqual(host.settings.guideInstalls, {});
+	assert.equal(stats.settingsSaves, 0);
 });
