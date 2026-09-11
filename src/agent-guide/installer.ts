@@ -138,7 +138,7 @@ export class GuideInstaller {
 			}
 		}
 		host.settings.guideInstalls = installs;
-		if (Platform.isDesktopApp) {
+		if (Platform.isDesktopApp && !Platform.isMobile) {
 			try {
 				const saved = host.app.loadLocalStorage(LOCAL_KEY) as Partial<LocalState> | null;
 				if (saved && typeof saved === "object") {
@@ -163,10 +163,10 @@ export class GuideInstaller {
 		}
 	}
 
-	get global(): boolean { return Platform.isDesktopApp && this.local.global; }
+	get global(): boolean { return Platform.isDesktopApp && !Platform.isMobile && this.local.global; }
 
 	get globalSkillFolder(): string {
-		if (!Platform.isDesktopApp) return "";
+		if (!Platform.isDesktopApp || Platform.isMobile) return "";
 		try { return this.local.skillFolder ?? globalSkillParent(); }
 		catch { return ""; }
 	}
@@ -177,7 +177,7 @@ export class GuideInstaller {
 
 	getRecord(target: GuideTarget, scope: GuideScope = "vault"): InstallRecord | undefined {
 		return scope === "vault" ? this.host.settings.guideInstalls[target] :
-			Platform.isDesktopApp ? this.local.installs[target] : undefined;
+			Platform.isDesktopApp && !Platform.isMobile ? this.local.installs[target] : undefined;
 	}
 
 	setGlobal(enabled: boolean): void {
@@ -238,7 +238,7 @@ export class GuideInstaller {
 
 	async updateInstalled(): Promise<void> {
 		if (this.busy || this.disposed) return;
-		const scopes: GuideScope[] = Platform.isDesktopApp ? ["vault", "global"] : ["vault"];
+		const scopes: GuideScope[] = Platform.isDesktopApp && !Platform.isMobile ? ["vault", "global"] : ["vault"];
 		const installed = scopes.flatMap((scope) => TARGETS
 			.filter((target) => this.getRecord(target, scope))
 			.map((target) => ({ target, scope })));
@@ -449,7 +449,7 @@ export class GuideInstaller {
 
 	private assertGlobal(): void {
 		this.assertActive();
-		if (!Platform.isDesktopApp) throw new Error("Global imports require the desktop app.");
+		if (!Platform.isDesktopApp || Platform.isMobile) throw new Error("Global imports require the desktop app.");
 		if (this.localError) throw new Error(`Device-local settings unavailable: ${this.localError}`);
 	}
 

@@ -6,7 +6,7 @@ import { guideTargetPath } from "./core.mjs";
 export class DesktopConflictError extends Error {}
 
 function desktopOnly(): void {
-	if (!Platform.isDesktopApp) throw new Error("Global imports require the desktop app.");
+	if (!Platform.isDesktopApp || Platform.isMobile) throw new Error("Global imports require the desktop app.");
 }
 
 function paths(): typeof import("path") {

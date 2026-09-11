@@ -13,13 +13,18 @@ const components = await loadComponents();
 const { GuideInstaller } = components;
 const require = createRequire(import.meta.url);
 
-async function fixture(t, { desktop = true, saved = null, saveFailure = false } = {}) {
+async function fixture(t, { desktop = true, mobileUI = !desktop, saved = null, saveFailure = false } = {}) {
 	const root = await mkdtemp(join(os.tmpdir(), "mosaic-guide-"));
 	t.after(() => rm(root, { recursive: true, force: true }));
 	// Host facilities are external; filesystem operations below remain real.
 	if (components.Platform) components.Platform.isDesktopApp = desktop;
+	components.Platform.isMobile = mobileUI;
 	mock.method(os, "homedir", () => root);
-	t.after(() => { mock.restoreAll(); if (components.Platform) components.Platform.isDesktopApp = false; });
+	t.after(() => {
+		mock.restoreAll();
+		components.Platform.isDesktopApp = false;
+		components.Platform.isMobile = false;
+	});
 	let local = saved;
 	const host = {
 		app: {
@@ -100,6 +105,37 @@ test("mobile never loads desktop modules or device-local global records", async 
 	assert.equal((await installer.install("agents", "global")).status, "error");
 	assert.equal(installer.getRecord("agents", "global"), undefined);
 	assert.throws(() => installer.setGlobal(true), /desktop/i);
+});
+
+test("desktop mobile emulation skips global state and unavailable Node facilities", async (t) => {
+	const { host } = await fixture(t, { desktop: true, mobileUI: true });
+	let storageReads = 0;
+	let storageWrites = 0;
+	let desktopLoads = 0;
+	host.app.loadLocalStorage = () => {
+		storageReads++;
+		return { global: true, installs: {} };
+	};
+	host.app.saveLocalStorage = () => { storageWrites++; };
+	const original = Module._load;
+	mock.method(Module, "_load", function (name, ...args) {
+		if (["fs", "os", "path", "crypto", "@electron/remote"].includes(name)) {
+			desktopLoads++;
+			return null;
+		}
+		return original.call(this, name, ...args);
+	});
+	const installer = new GuideInstaller(host, "# Guide");
+	assert.equal(installer.global, false);
+	assert.equal(installer.globalSkillFolder, "");
+	await installer.updateInstalled();
+	assert.equal(installer.getRecord("agents", "global"), undefined);
+	assert.equal((await installer.install("agents", "global")).status, "error");
+	assert.throws(() => installer.setGlobal(true), /desktop/i);
+	await assert.rejects(installer.chooseGlobalSkillFolder(), /desktop/i);
+	assert.equal(storageReads, 0);
+	assert.equal(storageWrites, 0);
+	assert.equal(desktopLoads, 0);
 });
 
 test("native picker cancellation does not change selection or records", async (t) => {
